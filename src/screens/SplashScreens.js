@@ -33,7 +33,7 @@ export default function SplashScreen() {
 
   return (
     <ImageBackground
-      source={require('../../assets/images/welcome/reporter.jpg')}
+      source={require('../../assets/images/welcome/splash-screen-1.png')}
     className="flex-1 items-center justify-center"
     >
 
