@@ -11,16 +11,17 @@ import {
 } from "react-native";
 import { useColorScheme } from "nativewind";
 import { useQuery } from "react-query";
-import { fetchBreakingNews, fetchRecommendedNews } from "../../utils/NewsApi";
+import { fetchNANews, fetchTNANews } from "../../utils/NewsApi";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../src/components/Header";
 import Loading from "../../src/components/Loading";
 import MiniHeader from "../../src/components/MiniHeader";
+import Counter from "../../src/components/Counter";
 import { useFonts } from "expo-font";
 import { Ionicons } from "@expo/vector-icons";
 import { VictoryPie, VictoryTooltip, VictoryLegend } from "victory-native";
 
-const API_KEY =
+const CHATGPT_API_KEY =
   "sk-algepi-news-1-t5Tl89Dkq27JBkBK3SivT3BlbkFJMgX0jaTTQVYkfrUaGf59";
 const API_URL = "https://api.openai.com/v1/chat/completions";
 
@@ -63,7 +64,7 @@ export default function HomeScreen() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer " + API_KEY,
+          Authorization: "Bearer " + CHATGPT_API_KEY,
         },
         body: JSON.stringify(APIBody),
       });
@@ -108,7 +109,7 @@ export default function HomeScreen() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer " + API_KEY,
+          Authorization: "Bearer " + CHATGPT_API_KEY,
         },
         body: JSON.stringify(APIBody),
       });
@@ -153,7 +154,7 @@ export default function HomeScreen() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer " + API_KEY,
+          Authorization: "Bearer " + CHATGPT_API_KEY,
         },
         body: JSON.stringify(APIBody),
       });
@@ -214,7 +215,7 @@ export default function HomeScreen() {
 
   const { data, isLoading: isBreakingLoading } = useQuery({
     queryKey: ["breakingNews"],
-    queryFn: fetchBreakingNews,
+    queryFn: fetchNANews,
     onSuccess: (data) => {
       console.log("Breaking news data fetched successfully.");
       analyzeNewsSentiments(data.articles);
@@ -226,7 +227,7 @@ export default function HomeScreen() {
 
   const { data: recommendedNew, isLoading: isRecommendedLoading } = useQuery({
     queryKey: ["recommendedNews"],
-    queryFn: fetchRecommendedNews,
+    queryFn: fetchTNANews,
     onSuccess: (data) => {
       console.log("Recommended news data fetched successfully.");
       analyzeNewsSentiments(data.articles);
@@ -238,6 +239,8 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+                  {/* <Counter /> */}
+
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <Header />
       <View style={styles.inputContainer}>

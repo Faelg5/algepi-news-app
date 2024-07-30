@@ -29,7 +29,7 @@ export default function WelcomeScreen() {
         fontFamily: 'SpaceGroteskBold',
        }}
         > 
-      Epistemic Compass
+      Fair News
         </Text>
 
         <Text className='text-white text-center max-w-[85%] leading-12 tracking-wider'
@@ -37,7 +37,7 @@ export default function WelcomeScreen() {
           fontSize: wp(5),
           fontFamily: 'SpaceGroteskMedium',
         }}>
-          Discover the ‘Why’ Behind Your News Feed.
+          Staying aware when reading news.
         </Text>
     </View>
 

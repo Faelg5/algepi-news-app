@@ -3,15 +3,21 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useColorScheme } from 'nativewind';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import AskGPTScreen from '../screens/AskGPTScreen';
+import { ColorList } from "../constants/colors";
+
 import AIGuideScreen from '../screens/AIGuideScreen';
+import FeedScreenXAI from '../screens/FeedScreenXAI';
 import FeedScreen from '../screens/FeedScreen';
+
+import PreferencesScreen from "../screens/PreferencesScreen"; // Import the new screen
+
 import SummariesScreen from '../screens/SummariesScreen';
 import SavedScreen from '../screens/SavedScreen';
 import SplashScreens from '../screens/SplashScreens';
 import WelcomeScreen from '../screens/WelcomeScreen';
 import NewsDetailsScreen from '../screens/NewsDetailsScreen';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import AskGPTScreen from '../screens/AskGPTScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -22,7 +28,7 @@ export default function AppNavigation() {
     const TabNavigator = () => {
         return (
             <Tab.Navigator
-                initialRouteName="Reasons" // Set initial route name here
+                initialRouteName="Preferences" // Set initial route name here
                 screenOptions={({ route }) => ({
                     headerShown: false,
                     tabBarIcon: ({ focused }) => {
@@ -39,18 +45,20 @@ export default function AppNavigation() {
                         else if (route.name === 'Ask GPT') {
                             iconName = focused ? 'chatbubble-ellipses-sharp' : 'chatbubble-ellipses-outline';
                         }
-
+                        else if (route.name === 'Preferences') {
+                            iconName = focused ? 'cog' : 'cog-outline';
+                        }
                         const customSize = 24;
 
                         return (
-                            <Ionicons name={iconName} size={customSize} color={focused ? 'green' : 'gray'} />
+                            <Ionicons name={iconName} size={customSize} color={focused ? ColorList.primary : 'gray'} />
                         );
                     },
-                    tabBarActiveTintColor: 'green',
+                    tabBarActiveTintColor: ColorList.primary,
                     tabBarInactiveTintColor: 'gray',
                     tabBarLabelStyle: {
                         fontSize: 12,
-                        fontFamily: 'SpaceGroteskMedium',
+                        fontFamily: 'HelveticaNeue',
                     },
                     tabBarStyle: {
                         backgroundColor: colorScheme === 'dark' ? '#000' : '#fff',
@@ -59,9 +67,10 @@ export default function AppNavigation() {
             >
                 <Tab.Screen name="Feed" component={FeedScreen} />
                 {/* <Tab.Screen name="Advice" component={AIGuideScreen} /> */}
-                {/* <Tab.Screen name="Saved" component={SummariesScreen} /> */}
                 <Tab.Screen name="Themes summary" component={SummariesScreen} />
                 <Tab.Screen name="Ask GPT" component={AskGPTScreen} />
+                <Tab.Screen name="Preferences" component={PreferencesScreen} />
+
 
             </Tab.Navigator>
         );
@@ -79,6 +88,8 @@ export default function AppNavigation() {
                 <Stack.Screen name="Welcome" component={WelcomeScreen} />
                 <Stack.Screen name="Themes summary" component={SummariesScreen} />
                 <Stack.Screen name="Ask GPT" component={AskGPTScreen} />
+                <Stack.Screen name="Preferences" component={PreferencesScreen} />
+
 
                 <Stack.Screen
                     name="NewsDetails"

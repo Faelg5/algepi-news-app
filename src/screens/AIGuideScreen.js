@@ -18,7 +18,7 @@ import { useFonts } from "expo-font";
 import { VictoryPie, VictoryTooltip, VictoryLegend } from "victory-native";
 import InfoButton from "../components/InfoButton";
 
-const API_KEY =
+const NEWS_API_ORG_API_KEY =
   "sk-algepi-news-1-t5Tl89Dkq27JBkBK3SivT3BlbkFJMgX0jaTTQVYkfrUaGf59";
 const API_URL = "https://api.openai.com/v1/chat/completions";
 

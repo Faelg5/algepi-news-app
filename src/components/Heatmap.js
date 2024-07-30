@@ -1,7 +1,7 @@
 import React from "react";
 import { View, StyleSheet, Text } from "react-native";
 
-const Heatmap = ({ data, height = 100, showValues = true }) => {
+const Heatmap = ({ data, height = 50, showValues = true }) => {
   const labels = ["User Preferences", "Content Similarity", "User Behavior", "Other"];
 
   // Ensure we have exactly 4 items for the heatmap
@@ -12,8 +12,8 @@ const Heatmap = ({ data, height = 100, showValues = true }) => {
 
   // Function to interpolate between two colors
   const interpolateColor = (value) => {
-    const startColor = { r: 222, g: 235, b: 247 }; // #deebf7
-    const endColor = { r: 49, g: 130, b: 189 };   // #3182bd
+    const startColor = { r: 255, g: 255, b: 255 }; // #B2E2E2
+    const endColor = { r: 6, g: 90, b: 130 };     // #065A82
 
     const factor = value / maxValue;
     const r = Math.round(startColor.r + factor * (endColor.r - startColor.r));

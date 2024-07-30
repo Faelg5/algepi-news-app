@@ -20,7 +20,7 @@ import { useFonts } from "expo-font";
 import { Ionicons } from "@expo/vector-icons";
 import { VictoryPie, VictoryTooltip, VictoryLegend } from "victory-native";
 
-const API_KEY = "sk-algepi-news-1-t5Tl89Dkq27JBkBK3SivT3BlbkFJMgX0jaTTQVYkfrUaGf59";
+const NEWS_API_ORG_API_KEY = "sk-algepi-news-1-t5Tl89Dkq27JBkBK3SivT3BlbkFJMgX0jaTTQVYkfrUaGf59";
 const API_URL = "https://api.openai.com/v1/chat/completions";
 
 export default function AskGPTScreen() {
@@ -62,7 +62,7 @@ export default function AskGPTScreen() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer " + API_KEY,
+          Authorization: "Bearer " + NEWS_API_ORG_API_KEY,
         },
         body: JSON.stringify(APIBody),
       });
@@ -107,7 +107,7 @@ export default function AskGPTScreen() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer " + API_KEY,
+          Authorization: "Bearer " + NEWS_API_ORG_API_KEY,
         },
         body: JSON.stringify(APIBody),
       });
@@ -152,7 +152,7 @@ export default function AskGPTScreen() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer " + API_KEY,
+          Authorization: "Bearer " + NEWS_API_ORG_API_KEY,
         },
         body: JSON.stringify(APIBody),
       });
