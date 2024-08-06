@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useColorScheme } from "nativewind";
 import { useQuery } from "react-query";
-import { fetchNANews, fetchTNANews } from "../../utils/NewsApi";
+import { fetchAllNewsNA, fetchTNANews } from "../../utils/NewsApi";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../src/components/Header";
 import Loading from "../../src/components/Loading";
@@ -21,8 +21,7 @@ import { useFonts } from "expo-font";
 import { Ionicons } from "@expo/vector-icons";
 import { VictoryPie, VictoryTooltip, VictoryLegend } from "victory-native";
 
-const CHATGPT_API_KEY =
-  "sk-algepi-news-1-t5Tl89Dkq27JBkBK3SivT3BlbkFJMgX0jaTTQVYkfrUaGf59";
+const CHATGPT_API_KEY ="";
 const API_URL = "https://api.openai.com/v1/chat/completions";
 
 export default function HomeScreen() {
@@ -215,7 +214,7 @@ export default function HomeScreen() {
 
   const { data, isLoading: isBreakingLoading } = useQuery({
     queryKey: ["breakingNews"],
-    queryFn: fetchNANews,
+    queryFn: fetchAllNewsNA,
     onSuccess: (data) => {
       console.log("Breaking news data fetched successfully.");
       analyzeNewsSentiments(data.articles);

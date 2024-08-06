@@ -7,9 +7,9 @@ const theNewsApiBaseUrl = "https://api.thenewsapi.com/v1/news";
 const breakingNewsUrl = (country) => `${newsApiBaseUrl}/top-headlines?country=${country}&apiKey=${newsApiKey}`;
 const recommendedNewsUrl = (country, category) => `${newsApiBaseUrl}/top-headlines?country=${country}&category=${category}&apiKey=${newsApiKey}`;
 const discoverNewsUrl = (country, discover) => `${newsApiBaseUrl}/top-headlines?country=${country}&category=${discover}&apiKey=${newsApiKey}`;
-const searchNewsUrl = (query) => `${newsApiBaseUrl}/everything?q=${query}&api_token=${newsApiKey}`;
+const everythingUrlNA = (q, language) => `${newsApiBaseUrl}/everything?q=(${q})&language=${language}&apiKey=${newsApiKey}`;
 
-const TNAUrl = (locale, categories) => `${theNewsApiBaseUrl}/top?api_token=${theNewsApiKey}&locale=${locale}&categories=${categories}`;
+const urlTNA = (locale, categories) => `${theNewsApiBaseUrl}/top?api_token=${theNewsApiKey}&locale=${locale}&categories=${categories}`;
 
 const apiCall = async (sourceName, endpoints, params) => {
   const options = {
@@ -19,6 +19,9 @@ const apiCall = async (sourceName, endpoints, params) => {
   };
 
   try {
+    console.log("the EndPoint");
+    console.log(endpoints);
+
     const response = await axios.request(options);
     console.log("the RESPONSE");
     console.log(response);
@@ -43,17 +46,22 @@ export const fetchRecommendedNews = async (country, category) => {
   return await apiCall("newsApi", recommendedNewsUrl(country, category));
 };
 
-export const fetchDiscoverNews = async (country, discover) => {
-  return await apiCall("newsApi", discoverNewsUrl(country, discover));
+export const fetchAllNewsNA = async (q, language) => {
+  console.log("fetching all news from News API");
+  console.log("country: ", q);
+  console.log("language: ", language);
+
+  const url = everythingUrlNA(q, language);
+  return await apiCall("newsApi", url);
 };
 
 export const fetchSearchNews = async (query) => {
-  const endpoint = searchNewsUrl(query);
+  const endpoint = everythingUrlNA(query);
   return await apiCall("newsApi", endpoint);
 };
 
 export const fetchTNA = async (locale, categories) => {
-  const url = TNAUrl(locale, categories);
+  const url = urlTNA(locale, categories);
   console.log("fetching news from The News API");
   console.log("locale: ", locale);
   console.log("categories: ", categories);

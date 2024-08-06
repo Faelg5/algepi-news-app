@@ -20,7 +20,7 @@ const queryClient = new QueryClient(); // Create a new instance of the query cli
 export const UserPreferencesContext = createContext();
 
 const API_KEY = newsApiKey;
-const API_URL = 'https://newsapi.org/v2/sources';
+const API_URL = 'https://newsapi.org/v2/top-headlines';
 
 // async function fetchAvailableCountries() {
 //   try {

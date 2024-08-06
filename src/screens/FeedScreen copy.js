@@ -22,8 +22,8 @@ import Heatmap from "../components/Heatmap";
 import { UserPreferencesContext } from "../../App"; // Import context
 
 
-const NEWS_API_ORG_API_KEY =
-  "sk-algepi-news-1-t5Tl89Dkq27JBkBK3SivT3BlbkFJMgX0jaTTQVYkfrUaGf59";
+const NEWS_API_ORG_API_KEY = ""
+
 const API_URL = "https://api.openai.com/v1/chat/completions";
 
 const callOpenAIAPI = async (content) => {

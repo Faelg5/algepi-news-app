@@ -12,7 +12,7 @@ import {
 import { useColorScheme } from "nativewind";
 import { useQuery } from "react-query";
 import {
-  fetchBreakingNews,
+  fetchAllNewsNA,
   fetchRecommendedNews,
   fetchTNA,
 } from "../../utils/NewsApi";
@@ -30,9 +30,8 @@ import { TfIdf } from "../../utils/tfidf"; // Custom TF-IDF class
 
 import { Picker } from "@react-native-picker/picker";
 import { heightPercentageToDP } from "react-native-responsive-screen";
-
 const CHATGPT_API_KEY =
-  "sk-algepi-news-1-t5Tl89Dkq27JBkBK3SivT3BlbkFJMgX0jaTTQVYkfrUaGf59";
+  "";
 const CHATGPT_API_URL = "https://api.openai.com/v1/chat/completions";
 
 const callOpenAIAPI = async (content) => {
@@ -79,10 +78,9 @@ const callOpenAIAPI = async (content) => {
   }
 };
 
-
 const OpenAIThemeSummaryCall = async (content) => {
-  console.log("CONTENT:::")
-  console.log(content)
+  // console.log("CONTENT:::");
+  // console.log(content);
   const APIBody = {
     model: "gpt-3.5-turbo",
     messages: [
@@ -94,8 +92,8 @@ const OpenAIThemeSummaryCall = async (content) => {
       {
         role: "user",
         content:
-          "Return a summary of the given text, using only a list of the terms defined here: tech, sports, politics, health, entertainment, food, travel"
-          + content,
+          "Your role is to simply return a list of terms. Select the terms in an objective, neutral and respectful way. Return only a list of words that summarize the themes in the given text, using only the terms listed here: tech, sports, politics, health, entertainment, food, travel. Never include a full sentence or something else than one of these specific terms I just mentioned, and commas. Here is the document to summarize:" +
+          content,
       },
     ],
     max_tokens: 60,
@@ -103,7 +101,6 @@ const OpenAIThemeSummaryCall = async (content) => {
   };
 
   try {
-
     const response = await fetch(CHATGPT_API_URL, {
       method: "POST",
       headers: {
@@ -116,8 +113,8 @@ const OpenAIThemeSummaryCall = async (content) => {
     if (!response.ok) {
       throw new Error("Network response was not ok " + response.statusText);
     }
-    console.log("RESPONSE:JSON")
-    console.log(response)
+    // console.log("RESPONSE:JSON");
+    // console.log(response);
     const data = await response.json();
     return data.choices && data.choices.length > 0
       ? data.choices[0].message.content.trim()
@@ -126,7 +123,7 @@ const OpenAIThemeSummaryCall = async (content) => {
     console.error("Error calling OpenAI API:", error);
     return "❓";
   }
-}
+};
 
 const sources = [
   { label: "News API", value: "newsApi" },
@@ -139,10 +136,14 @@ const getCountryName = (countryCode) =>
 var currentCountryName;
 
 export default function FeedScreen() {
+
   const { selectedThemes, selectedCountry } = useContext(
     UserPreferencesContext
   ); // Use context to get user preferences
-  const [source, setSource] = useState("theNewsApi");
+  const [source, setSource] = useState("newsApi");
+  const [newsData, setNewsData] = useState([]);
+
+  // const [source, setSource] = useState("theNewsApi");
   const [newsWithSentiments, setNewsWithSentiments] = useState([]);
   const [newsWithSummaries, setNewsWithSummaries] = useState([]);
   const [expandedHeatmapIndex, setExpandedHeatmapIndex] = useState(null);
@@ -170,28 +171,32 @@ export default function FeedScreen() {
 
   const fetchNews = async () => {
     let response;
-    let newsData;
-
+    console.log("using source: " + source);
     if (source === "newsApi") {
-      response = await fetchBreakingNews();
+      response = await fetchAllNewsNA(
+        selectedThemes.join("+"),
+        selectedCountry
+      ); // using OR operator to search for multiple themes
     } else if (source === "theNewsApi") {
       response = await fetchTNA(selectedCountry, selectedThemes.join(","));
     } else if (source === "googleNews") {
       response = await fetchRecommendedNews();
     }
     console.log("Fetching news from " + source + "...");
-    console.log("hello world");
+
     currentCountryName = getCountryName(selectedCountry);
-    console.log("currentCountryName: " + currentCountryName);
-    console.log(response);
-    console.log("source: " + source);
+    console.log("Current language Name: " + currentCountryName);
+    // console.log(response);
+    console.log("Source: " + source);
 
     if (response) {
       let articles = [];
+      console.log("RESPONSE:");
+      console.log(response);
 
       if (source === "theNewsApi" && response.data) {
         articles = response.data.map((item) => ({
-          author: null, // Assuming there's no author information in the original data
+          author: item.source, // Assuming there's no author information in the original data
           content: item.snippet, // Using the snippet as the content
           description: item.description,
           publishedAt: item.published_at,
@@ -200,18 +205,23 @@ export default function FeedScreen() {
           url: item.url,
           urlToImage: item.image_url,
         }));
-      } else if (response.articles) {
-        articles = response.articles;
+      } else if (response.data) {
+        articles = response.data;
+        console.log("articles are now: ");
+        console.log(articles);
+        setNewsData(articles);
       }
+
       console.log("full response is above ");
       console.log("country: " + selectedCountry);
 
-      newsData = articles;
-      console.log("newsData: ");
-      console.log(newsData);
-      analyzeNewsSentiments(articles);
+      console.log("articles: ");
+      console.log(articles);
+      // setNewsWithSummaries(articles);
+      summarizeThemesInArticles(articles);
+
+      // analyzeNewsSentiments(articles);
       generateSummaries(articles);
-      summarizeThemesInArticles(articles)
     }
   };
 
@@ -231,16 +241,16 @@ export default function FeedScreen() {
   const summarizeThemesInArticles = async (articles) => {
     const summarizedThemesList = await Promise.all(
       articles.map(async (article) => {
-        const summary = await OpenAIThemeSummaryCall(article.title);
+        const summary = await OpenAIThemeSummaryCall(article.title); // get a summary of the article as a list of terms
         return {
           ...article,
           summary,
         };
-        console.log(summary)
+        console.log(summary);
       })
     );
-    console.log("summarizedThemesList");
-    console.log(summarizedThemesList)
+    // console.log("full list of each article with summary");
+    // console.log(summarizedThemesList);
   };
 
   const calculateAverages = () => {
@@ -266,22 +276,39 @@ export default function FeedScreen() {
     };
   };
 
-  const comparePreferences = (article) => {
-
+  comparePreferences = async (article) => {
     console.log("selected themes");
     console.log(selectedThemes);
-    // selectedThemes.forEach((pref) => tfidf.addDocument(pref));
 
-    console.log("adding document: ");
+    console.log("adding article: ");
     console.log(article);
 
-    console.log(article.description);
-
+    // Ensure aiSummary is resolved
+    if (source === "theNewsApi") {
+      article.aiSummary = await OpenAIThemeSummaryCall(article.description);
+    } else if (source === "newsApi") {
+      article.aiSummary = await OpenAIThemeSummaryCall(article.content);
+    }
     const terms = selectedThemes;
-
     console.log(terms);
-    const scores = terms.map((term) => tfidf.tfidf(term, article.description));
+
+    const scores = terms.map((term) => tfidf.tfidf(term, article.aiSummary));
     console.log(tfidf);
+
+    // Iterate over displayedNews and ensure aiSummary is correctly processed
+    newsData.forEach((article) => {
+      console.log("add this article: " + article);
+
+      if (typeof article.aiSummary === "object") {
+        var summary = Object.values(article.aiSummary).join(" ");
+      } else if (typeof article.aiSummary === "string") {
+        var summary = article.aiSummary;
+      }
+
+      console.log("article summary: " + summary);
+      tfidf.addDocument(summary);
+    });
+
     return scores.reduce((sum, score) => sum + score, 0);
   };
 
@@ -294,16 +321,15 @@ export default function FeedScreen() {
     if (showSummaries) {
       generateSummaries(newsWithSentiments);
     } else {
-      fetchNews();
+      // fetchNews();
     }
   }, [showSummaries]);
-
 
   useEffect(() => {
     if (showSummaries) {
       generateSummaries(newsWithSentiments);
     } else {
-      fetchNews();
+      // fetchNews();
     }
   }, [showSummaries]);
 
@@ -321,14 +347,20 @@ export default function FeedScreen() {
     }
   }, [fontsLoaded, fontError]);
 
-  const { isLoading: isNewsLoading, data: newsData } = useQuery({
+  const { isLoading: isNewsLoading, data: data } = useQuery({
     queryKey: ["news", source],
     queryFn: fetchNews,
     onSuccess: (data) => {
-      const articles = source === "theNewsApi" ? newsData : newsData.articles; // depending on the source, we parse the articles differently
+
+      console.log("data: ");
+      console.log(data);
+      articles = source === "theNewsApi" ? data : data; // depending on the source, we parse the articles differently
       console.log("articles: ");
       console.log(articles);
-      analyzeNewsSentiments(articles);
+
+      // Set newsData variable as the articles
+      setNewsData(data)
+      // analyzeNewsSentiments(articles);
     },
     onError: (error) => {
       console.error("Error fetching news:", error);
@@ -364,18 +396,13 @@ export default function FeedScreen() {
 
   const isLoading = isNewsLoading;
 
-  const displayedNews = showSummaries ? newsWithSummaries : newsWithSentiments;
+  // var displayedNews = showSummaries ? newsWithSummaries : newsWithSentiments;
+  // console.log(newsWithSummaries);
   const averages = calculateAverages();
 
   [currentCountry, setCurrentCountry] = useState(selectedCountry || "fr");
-  
-  
-  const tfidf = new TfIdf();
 
-  displayedNews.map((article) => {
-          // Ajouter chaque article au TF-IDF
-            tfidf.addDocument(article.description);
-        });
+  const tfidf = new TfIdf();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -430,88 +457,90 @@ export default function FeedScreen() {
       {isLoading ? (
         <Loading />
       ) : (
-        <View
-          style={styles.articlesContainer}
-          className={colorScheme === "dark" ? "bg-black" : "bg-white"}
-        >
-          <ScrollView
+        (console.log("newsData: ", newsData),
+        (
+          <View
+            style={styles.articlesContainer}
             className={colorScheme === "dark" ? "bg-black" : "bg-white"}
           >
-            {displayedNews.map((article, index) => (
-              <TouchableOpacity
-                className="mb-4 mx-4 space-y-1"
-                key={index}
-                onPress={() => handleNewsDetailsClick(item)}
-              >
-                {/* <View
+            <ScrollView
+              className={colorScheme === "dark" ? "bg-black" : "bg-white"}
+            >
+              {newsData.map((article, index) => (
+                <TouchableOpacity
+                  className="mb-4 mx-4 space-y-1"
+                  key={index}
+                  onPress={() => handleNewsDetailsClick(item)}
+                >
+                  {/* <View
                 key={index}
                 style={[styles.row, { alignContent: "center" }]}
                 className={colorScheme === "dark" ? "bg-black" : "bg-gray"}
               > */}
 
-                <View className="flex-row justify-start w-[100%] shadow-sm">
-                  <Image
-                    source={{
-                      uri:
-                        article.urlToImage || "https://picsum.photos/200/400",
-                    }}
-                    style={{
-                      width: heightPercentageToDP(9),
-                      height: heightPercentageToDP(10),
-                    }}
-                  />
-                  {/* Content */}
-                  <View className="w-[70%] pl-4 justify-center space-y-1">
-                    {/* source name */}
-                    <Text className="text-xs font-bold text-gray-900 dark:text-neutral-300">
-                      {article?.source?.name.length > 20
-                        ? article.source.name.slice(0, 20) + "..."
-                        : article.source.name}
-                    </Text>
-
-                    {/* article title */}
-                    <Text
-                      className="text-neutral-800 capitalize max-w-[90%] dark:text-white"
+                  <View className="flex-row justify-start w-[100%] shadow-sm">
+                    <Image
+                      source={{
+                        uri:
+                          article.urlToImage || "https://picsum.photos/200/400",
+                      }}
                       style={{
-                        fontWeight: showSummaries ? "normal" : "bold",
-                        marginTop: 10,
+                        width: heightPercentageToDP(9),
+                        height: heightPercentageToDP(10),
+                      }}
+                    />
+                    {/* Content */}
+                    <View className="w-[70%] pl-4 justify-center space-y-1">
+                      {/* source name */}
+                      <Text className="text-xs font-bold text-gray-900 dark:text-neutral-300">
+                        {article?.source?.name.length > 20
+                          ? article.source.name.slice(0, 20) + "..."
+                          : article.source.name}
+                      </Text>
+
+                      {/* article title */}
+                      <Text
+                        className="text-neutral-800 capitalize max-w-[90%] dark:text-white"
+                        style={{
+                          fontWeight: showSummaries ? "normal" : "bold",
+                          marginTop: 10,
+                        }}
+                      >
+                        {showSummaries
+                          ? article.aiSummary
+                          : article?.title?.length > 50
+                          ? article?.title.slice(0, 50) + "..."
+                          : article?.title}
+                      </Text>
+
+                      {/* Date */}
+                      <Text className="text-xs text-gray-700 dark:text-neutral-400">
+                        {formatDate(article.publishedAt)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Compute the preference match score if data is available */}
+                  <Text>
+                    Preference Match Score:{" "}
+                    {article.content.length < 1 // if the content is existing, start comparison
+                      ? "content is behind a paywall"
+                      : comparePreferences(article)}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() =>
+                      setExpandedHeatmapIndex(
+                        expandedHeatmapIndex === index ? null : index
+                      )
+                    }
+                  >
+                    <View
+                      style={{
+                        height: expandedHeatmapIndex === index ? 50 : 10,
+                        width: "100%",
                       }}
                     >
-                      {showSummaries
-                        ? article.summary
-                        : article?.title?.length > 50
-                        ? article?.title.slice(0, 50) + "..."
-                        : article?.title}
-                    </Text>
-
-                    {/* Date */}
-                    <Text className="text-xs text-gray-700 dark:text-neutral-400">
-                      {formatDate(article.publishedAt)}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Compute the preference match score if data is available */}
-                <Text>
-                  Preference Match Score:{" "}
-                  {article.description.length < 1
-                    ? "content is behind a paywall"
-                    : comparePreferences(article)}
-                </Text>
-                <TouchableOpacity
-                  onPress={() =>
-                    setExpandedHeatmapIndex(
-                      expandedHeatmapIndex === index ? null : index
-                    )
-                  }
-                >
-                  <View
-                    style={{
-                      height: expandedHeatmapIndex === index ? 50 : 10,
-                      width: "100%",
-                    }}
-                  >
-                    {/* <Heatmap
+                      {/* <Heatmap
                         data={[
                           { value: article.positive },
                           { value: article.neutral },
@@ -521,13 +550,14 @@ export default function FeedScreen() {
                         height={expandedHeatmapIndex === index ? 50 : 50} // Adjust height based on state
                         showValues={expandedHeatmapIndex === index} // Show values only if expanded
                       /> */}
-                  </View>
+                    </View>
+                  </TouchableOpacity>
+                  {/* </View> */}
                 </TouchableOpacity>
-                {/* </View> */}
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+              ))}
+            </ScrollView>
+          </View>
+        ))
       )}
     </SafeAreaView>
   );
