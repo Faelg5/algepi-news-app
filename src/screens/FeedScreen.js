@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, navigation } from "react";
 import {
   View,
   Text,
@@ -27,12 +27,14 @@ import Heatmap from "../components/Heatmap";
 import { UserPreferencesContext } from "../../App"; // Import context
 import { countries } from "./PreferencesScreen"; // Import countries list
 import { TfIdf } from "../../utils/tfidf"; // Custom TF-IDF class
+import styles from "../constants/styles";
 
 import { Picker } from "@react-native-picker/picker";
 import { heightPercentageToDP } from "react-native-responsive-screen";
 const CHATGPT_API_KEY =
-  "";
+  "sk-algepi-news-1-t5Tl89Dkq27JBkBK3SivT3BlbkFJMgX0jaTTQVYkfrUaGf59";
 const CHATGPT_API_URL = "https://api.openai.com/v1/chat/completions";
+
 
 const callOpenAIAPI = async (content) => {
   const APIBody = {
@@ -143,6 +145,8 @@ export default function FeedScreen() {
   const [source, setSource] = useState("newsApi");
   const [newsData, setNewsData] = useState([]);
 
+  const [isLoading, setIsLoading] = useState(true);
+
   // const [source, setSource] = useState("theNewsApi");
   const [newsWithSentiments, setNewsWithSentiments] = useState([]);
   const [newsWithSummaries, setNewsWithSummaries] = useState([]);
@@ -170,6 +174,7 @@ export default function FeedScreen() {
   };
 
   const fetchNews = async () => {
+    setIsLoading(true);
     let response;
     console.log("using source: " + source);
     if (source === "newsApi") {
@@ -194,6 +199,7 @@ export default function FeedScreen() {
       console.log("RESPONSE:");
       console.log(response);
 
+
       if (source === "theNewsApi" && response.data) {
         articles = response.data.map((item) => ({
           author: item.source, // Assuming there's no author information in the original data
@@ -205,11 +211,15 @@ export default function FeedScreen() {
           url: item.url,
           urlToImage: item.image_url,
         }));
+        // setIsLoading(false); // Set isLoading to false after data is fetched
+
       } else if (response.data) {
-        articles = response.data;
+        articles = response.data.articles;
         console.log("articles are now: ");
         console.log(articles);
         setNewsData(articles);
+        // setIsLoading(false); // Set isLoading to false after data is fetched
+
       }
 
       console.log("full response is above ");
@@ -217,6 +227,8 @@ export default function FeedScreen() {
 
       console.log("articles: ");
       console.log(articles);
+
+      console.log("newsData is now:" + newsData);
       // setNewsWithSummaries(articles);
       summarizeThemesInArticles(articles);
 
@@ -290,10 +302,10 @@ export default function FeedScreen() {
       article.aiSummary = await OpenAIThemeSummaryCall(article.content);
     }
     const terms = selectedThemes;
-    console.log(terms);
+    // console.log(terms);
 
     const scores = terms.map((term) => tfidf.tfidf(term, article.aiSummary));
-    console.log(tfidf);
+    // console.log(tfidf);
 
     // Iterate over displayedNews and ensure aiSummary is correctly processed
     newsData.forEach((article) => {
@@ -347,19 +359,20 @@ export default function FeedScreen() {
     }
   }, [fontsLoaded, fontError]);
 
-  const { isLoading: isNewsLoading, data: data } = useQuery({
+  const { isLoading: isNewsLoading, data: myData } = useQuery({
     queryKey: ["news", source],
     queryFn: fetchNews,
-    onSuccess: (data) => {
+    onSuccess: (myData) => {
 
       console.log("data: ");
-      console.log(data);
-      articles = source === "theNewsApi" ? data : data; // depending on the source, we parse the articles differently
+      console.log(myData);
+      articles = source === "theNewsApi" ? myData : myData; // depending on the source, we parse the articles differently
       console.log("articles: ");
       console.log(articles);
 
       // Set newsData variable as the articles
-      setNewsData(data)
+      setNewsData(myData);
+      setIsLoading(false);
       // analyzeNewsSentiments(articles);
     },
     onError: (error) => {
@@ -394,7 +407,6 @@ export default function FeedScreen() {
     other: Math.random() * 100,
   };
 
-  const isLoading = isNewsLoading;
 
   // var displayedNews = showSummaries ? newsWithSummaries : newsWithSentiments;
   // console.log(newsWithSummaries);
@@ -409,7 +421,7 @@ export default function FeedScreen() {
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <Header />
       <MiniHeader
-        label="News Feed"
+        label="Votre sélection du jour"
         explanation="Data from The News API, summaries by ChatGPT-4o. Learn more here."
       />
       <Text style={styles.subTitle}>
@@ -417,7 +429,7 @@ export default function FeedScreen() {
       </Text>
       <Text></Text>
       <View style={styles.preferencesContainer}>
-        <Text style={styles.subTitle}>Your selected topics:</Text>
+        <Text style={styles.subTitle}>Your topics:</Text>
         {selectedThemes.length > 0 ? (
           <View style={styles.themesContainer}>
             {selectedThemes.map((topic, index) => (
@@ -456,114 +468,100 @@ export default function FeedScreen() {
 
       {isLoading ? (
         <Loading />
-      ) : (
-        (console.log("newsData: ", newsData),
-        (
+      ) : (<>
+        {console.log("newsData: ", newsData)}
+        {Array.isArray(newsData) && newsData.length > 0 ? (
+          <ScrollView>
           <View
             style={styles.articlesContainer}
             className={colorScheme === "dark" ? "bg-black" : "bg-white"}
           >
-            <ScrollView
-              className={colorScheme === "dark" ? "bg-black" : "bg-white"}
-            >
-              {newsData.map((article, index) => (
-                <TouchableOpacity
-                  className="mb-4 mx-4 space-y-1"
-                  key={index}
-                  onPress={() => handleNewsDetailsClick(item)}
-                >
-                  {/* <View
+            {newsData.map((article, index) => (
+              <TouchableOpacity
+                className="mb-4 mx-4 space-y-1"
                 key={index}
-                style={[styles.row, { alignContent: "center" }]}
-                className={colorScheme === "dark" ? "bg-black" : "bg-gray"}
-              > */}
-
-                  <View className="flex-row justify-start w-[100%] shadow-sm">
-                    <Image
-                      source={{
-                        uri:
-                          article.urlToImage || "https://picsum.photos/200/400",
-                      }}
+                onPress={() => handleNewsDetailsClick(article)}
+              >
+                <View className="flex-row justify-start w-[100%] shadow-sm">
+                  <Image
+                    source={{
+                      uri: article.urlToImage || "https://picsum.photos/200/400",
+                    }}
+                    style={{
+                      width: heightPercentageToDP(9),
+                      height: heightPercentageToDP(10),
+                    }}
+                  />
+                  <View className="w-[70%] pl-4 justify-center space-y-1">
+                    <Text className="text-xs font-bold text-gray-900 dark:text-neutral-300">
+                      {article?.source?.name.length > 20
+                        ? article.source.name.slice(0, 20) + "..."
+                        : article.source.name}
+                    </Text>
+                    <Text
+                      className="text-neutral-800 capitalize max-w-[90%] dark:text-white"
                       style={{
-                        width: heightPercentageToDP(9),
-                        height: heightPercentageToDP(10),
-                      }}
-                    />
-                    {/* Content */}
-                    <View className="w-[70%] pl-4 justify-center space-y-1">
-                      {/* source name */}
-                      <Text className="text-xs font-bold text-gray-900 dark:text-neutral-300">
-                        {article?.source?.name.length > 20
-                          ? article.source.name.slice(0, 20) + "..."
-                          : article.source.name}
-                      </Text>
-
-                      {/* article title */}
-                      <Text
-                        className="text-neutral-800 capitalize max-w-[90%] dark:text-white"
-                        style={{
-                          fontWeight: showSummaries ? "normal" : "bold",
-                          marginTop: 10,
-                        }}
-                      >
-                        {showSummaries
-                          ? article.aiSummary
-                          : article?.title?.length > 50
-                          ? article?.title.slice(0, 50) + "..."
-                          : article?.title}
-                      </Text>
-
-                      {/* Date */}
-                      <Text className="text-xs text-gray-700 dark:text-neutral-400">
-                        {formatDate(article.publishedAt)}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Compute the preference match score if data is available */}
-                  <Text>
-                    Preference Match Score:{" "}
-                    {article.content.length < 1 // if the content is existing, start comparison
-                      ? "content is behind a paywall"
-                      : comparePreferences(article)}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() =>
-                      setExpandedHeatmapIndex(
-                        expandedHeatmapIndex === index ? null : index
-                      )
-                    }
-                  >
-                    <View
-                      style={{
-                        height: expandedHeatmapIndex === index ? 50 : 10,
-                        width: "100%",
+                        fontWeight: showSummaries ? "normal" : "bold",
+                        marginTop: 10,
                       }}
                     >
-                      {/* <Heatmap
-                        data={[
-                          { value: article.positive },
-                          { value: article.neutral },
-                          { value: article.negative },
-                          { value: article.other },
-                        ]}
-                        height={expandedHeatmapIndex === index ? 50 : 50} // Adjust height based on state
-                        showValues={expandedHeatmapIndex === index} // Show values only if expanded
-                      /> */}
-                    </View>
-                  </TouchableOpacity>
-                  {/* </View> */}
+                      {showSummaries
+                        ? article.aiSummary
+                        : article?.title?.length > 80
+                        ? article?.title.slice(0, 80) + "..."
+                        : article?.title}
+                    </Text>
+                    <Text className="text-xs text-gray-700 dark:text-neutral-400">
+                      {formatDate(article.publishedAt)}
+                    </Text>
+                  </View>
+                </View>
+                <Text>
+                  Preference Match Score:{" "}
+                  {article.content.length < 1 // if the content is existing, start comparison
+                    ? "content is behind a paywall"
+                    // : comparePreferences(article)}
+                    :"compare preferences here"}
+                </Text>
+                <TouchableOpacity
+                  onPress={() =>
+                    setExpandedHeatmapIndex(
+                      expandedHeatmapIndex === index ? null : index
+                    )
+                  }
+                >
+                  <View
+                    style={{
+                      height: expandedHeatmapIndex === index ? 50 : 10,
+                      width: "100%",
+                    }}
+                  >
+                    {/* <Heatmap
+                      data={[
+                        { value: article.positive },
+                        { value: article.neutral },
+                        { value: article.negative },
+                        { value: article.other },
+                      ]}
+                      height={expandedHeatmapIndex === index ? 50 : 50} // Adjust height based on state
+                      showValues={expandedHeatmapIndex === index} // Show values only if expanded
+                    /> */}
+                  </View>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
+              </TouchableOpacity>
+            ))}
           </View>
-        ))
+          </ScrollView>
+        ) : (
+          <Loading/>
+        )}
+      </>
       )}
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const feedStyles = StyleSheet.create({
   // Existing styles
   container: {
     flex: 1,

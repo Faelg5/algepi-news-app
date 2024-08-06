@@ -30,7 +30,7 @@ export default function Header() {
         />
       </TouchableOpacity>
       <Text className="px-0 text-sm font-normal">
-        }
+        
       </Text>
       <View className="flex-row space-x-4 rounded-full justify-center items-center">
         {/* <Switch value={isDarkMode} onChange={toggleColorScheme} /> */}
