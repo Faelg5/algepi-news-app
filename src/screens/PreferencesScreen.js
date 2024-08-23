@@ -1,10 +1,18 @@
 import React, { useContext, useState, useEffect } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, StatusBar, SafeAreaView } from "react-native";
+import { useColorScheme } from "nativewind";
+import Header from "../components/Header";
+import Loading from "../components/Loading";
+import MiniHeader from "../components/MiniHeader";
+import Counter from "../../src/components/Counter";
+import { ColorList } from "../constants/colors";
+
 import { Picker } from '@react-native-picker/picker';
 import { UserPreferencesContext } from "../../App";
 import styles from "../constants/styles";
+import translations from "../constants/translations";  // Import translations
 
-const themes = ["tech", "sports", "politics", "health", "entertainment", "food", "travel"];
+export const themes = ["tech", "sports", "politics", "health", "entertainment", "food", "travel"];
 
 export const countries = [
   { code: 'ar', name: 'Argentina' },
@@ -64,16 +72,45 @@ export const countries = [
   { code: 've', name: 'Venezuela' },
 ];
 
-export default function PreferencesScreen() {
-  const { selectedThemes, setSelectedThemes, selectedCountry, setSelectedCountry } = useContext(UserPreferencesContext);
+export const languages = [
+  { code: 'ar', name: 'العربية' },       // Arabic
+  { code: 'de', name: 'Deutsch' },       // German
+  { code: 'en', name: 'english' },       // English
+  { code: 'es', name: 'español' },       // Spanish
+  { code: 'fr', name: 'français' },      // French
+  { code: 'he', name: 'עברית' },         // Hebrew
+  { code: 'it', name: 'italiano' },      // Italian
+  { code: 'nl', name: 'nederlands' },    // Dutch
+  { code: 'no', name: 'norsk' },         // Norwegian
+  { code: 'pt', name: 'português' },     // Portuguese
+  { code: 'ru', name: 'Pусский' },       // Russian
+  { code: 'sv', name: 'svenska' },       // Swedish
+  { code: 'ud', name: 'اردو' },          // Urdu
+  { code: 'zh', name: '中文' },          // Chinese
+];
 
-  const [currentThemes, setCurrentThemes] = useState(selectedThemes || []);
-  const [currentCountry, setCurrentCountry] = useState(selectedCountry || 'fr');
+const findCodeByName = (name) => {
+  const language = languages.find(lang => lang.name === name);
+  return language ? language.code : null;
+};
+
+
+export default function PreferencesScreen() {
+  const { colorScheme } = useColorScheme();
+
+  const { selectedThemes, setSelectedThemes, selectedCountry, setSelectedCountry, selectedLanguageCode, setSelectedLanguageCode } = useContext(UserPreferencesContext);
+
+  const [currentThemes, setCurrentThemes] = useState(selectedThemes || ["tech", "sports"]);
+  const [currentCountry, setCurrentCountry] = useState(selectedCountry || 'en');
+  const [currentLanguageCode, setCurrentLanguageCode] = useState(selectedLanguageCode || 'fr');
+
 
   useEffect(() => {
     setSelectedThemes(currentThemes);
     setSelectedCountry(currentCountry);
-  }, [currentThemes, currentCountry, setSelectedThemes, setSelectedCountry]);
+    setSelectedLanguageCode(currentLanguageCode);
+    console.log("current language code: " + currentLanguageCode);
+  }, [currentThemes, currentCountry, currentLanguageCode, setSelectedThemes, setSelectedCountry, setSelectedLanguageCode]);
 
   const handleToggleTheme = (theme) => {
     setCurrentThemes((prev) =>
@@ -85,8 +122,20 @@ export default function PreferencesScreen() {
     setCurrentCountry(country);
   };
 
+
+  const handleSelectLanguage = (language) => {
+    setCurrentLanguageCode(language);
+  };
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+    <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+    <Header />
+    <MiniHeader
+      label={translations["fr"].preferencesMiniHeader}
+      explanation="Data from The News API, summaries by ChatGPT-4o. Learn more here."
+    />
+
       <Text style={styles.title}>Select your preferred news themes:</Text>
       <View style={styles.buttonContainer}>
         {themes.map((theme, index) => (
@@ -110,8 +159,8 @@ export default function PreferencesScreen() {
         ))}
       </View>
 
-      <Text style={styles.title}>Select your preferred country:</Text>
-      <View style={styles.pickerContainer}>
+      <Text style={styles.title}>Show news in</Text>
+      {/* <View style={styles.pickerContainer}>
         <Picker
           selectedValue={currentCountry}
           onValueChange={(itemValue) => handleSelectCountry(itemValue)}
@@ -121,7 +170,21 @@ export default function PreferencesScreen() {
             <Picker.Item key={index} label={country.name} value={country.code} />
           ))}
         </Picker>
+      </View> */}
+      <View style={styles.pickerContainer}>
+        <Picker
+          selectedValue={currentLanguageCode}
+          onValueChange={
+            (itemValue) => handleSelectLanguage(itemValue)
+          
+          }
+          style={styles.picker}
+        >
+          {languages.map((language, index) => (
+            <Picker.Item key={index} label={language.name} value={language.code} />
+          ))}
+        </Picker>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }

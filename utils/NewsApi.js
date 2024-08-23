@@ -7,7 +7,7 @@ const theNewsApiBaseUrl = "https://api.thenewsapi.com/v1/news";
 const breakingNewsUrl = (country) => `${newsApiBaseUrl}/top-headlines?country=${country}&apiKey=${newsApiKey}`;
 const recommendedNewsUrl = (country, category) => `${newsApiBaseUrl}/top-headlines?country=${country}&category=${category}&apiKey=${newsApiKey}`;
 const discoverNewsUrl = (country, discover) => `${newsApiBaseUrl}/top-headlines?country=${country}&category=${discover}&apiKey=${newsApiKey}`;
-const everythingUrlNA = (q, language) => `${newsApiBaseUrl}/everything?q=(${q})&language=${language}&apiKey=${newsApiKey}`;
+const everythingUrlNA = (q, language) => `${newsApiBaseUrl}/everything?q=(${q})&language=${language}&sortBy=relevancy&apiKey=${newsApiKey}`;
 
 const urlTNA = (locale, categories) => `${theNewsApiBaseUrl}/top?api_token=${theNewsApiKey}&locale=${locale}&categories=${categories}`;
 
@@ -23,8 +23,8 @@ const apiCall = async (sourceName, endpoints, params) => {
     console.log(endpoints);
 
     const response = await axios.request(options);
-    console.log("the RESPONSE");
-    console.log(response);
+    // console.log("the RESPONSE");
+    // console.log(response);
 
     if (sourceName === "theNewsApi") {
       return response.data;

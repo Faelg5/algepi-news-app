@@ -28,7 +28,7 @@ export default function AppNavigation() {
     const TabNavigator = () => {
         return (
             <Tab.Navigator
-                initialRouteName="Preferences" // Set initial route name here
+                initialRouteName="Feed" // Set initial route name here
                 screenOptions={({ route }) => ({
                     headerShown: false,
                     tabBarIcon: ({ focused }) => {
@@ -39,6 +39,9 @@ export default function AppNavigation() {
                         //  else if (route.name === 'Advice') {
                         //     iconName = focused ? 'chatbubble-ellipses-sharp' : 'chatbubble-ellipses-outline';
                         // }
+                        else if (route.name === 'NewsDetails') {
+                            iconName = focused ? 'document-text-sharp' : 'document-text-outline';
+                        }
                         else if (route.name === 'Themes summary') {
                             iconName = focused ? 'document-text-sharp' : 'document-text-outline';
                         }
@@ -67,9 +70,9 @@ export default function AppNavigation() {
             >
                 <Tab.Screen name="Feed" component={FeedScreen} />
                 {/* <Tab.Screen name="Advice" component={AIGuideScreen} /> */}
-                <Tab.Screen name="Themes summary" component={SummariesScreen} />
-                <Tab.Screen name="Ask GPT" component={AskGPTScreen} />
-                <Tab.Screen name="Preferences" component={PreferencesScreen} />
+                {/* <Tab.Screen name="Themes summary" component={SummariesScreen} /> */}
+                {/* <Tab.Screen name="Ask GPT" component={AskGPTScreen} /> */}
+                <Tab.Screen name="Profile" component={PreferencesScreen} />
 
 
             </Tab.Navigator>
@@ -88,7 +91,7 @@ export default function AppNavigation() {
                 <Stack.Screen name="Welcome" component={WelcomeScreen} />
                 <Stack.Screen name="Themes summary" component={SummariesScreen} />
                 <Stack.Screen name="Ask GPT" component={AskGPTScreen} />
-                <Stack.Screen name="Preferences" component={PreferencesScreen} />
+                <Stack.Screen name="Profile" component={PreferencesScreen} />
 
 
                 <Stack.Screen

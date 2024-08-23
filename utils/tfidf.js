@@ -14,7 +14,8 @@ export class TfIdf {
 
     if (typeof doc !== 'string') {
       console.error("Error: doc is not a string. Received:", doc);
-      return;
+      doc = ""
+      // return;
     }
 
     this.documents.push(doc);
@@ -43,13 +44,13 @@ export class TfIdf {
       this.docFrequencies[term]++;
     });
 
-    console.log("Terms in document:", terms);
+    console.log("Terms in this document:", terms);
     console.log("Term counts:", termCounts);
     console.log("Document frequencies:", this.docFrequencies);
   }
 
   tf(term, doc) {
-    console.log("doccccc:", doc);
+    console.log("computing term frequency in doccccc:", doc);
 
     if (typeof doc !== 'string') {
       console.error("Error: doc is not a string. Received:", doc);
@@ -59,18 +60,25 @@ export class TfIdf {
     const terms = doc.split(/\W+/);
     const termCount = terms.filter(t => t === term).length;
     console.log(`TF - term: "${term}", count in document: ${termCount}, total terms in document: ${terms.length}`);
+    console.log("tf:", termCount / terms.length);
     return termCount / terms.length;
   }
 
   idf(term) {
+    console.log("computing inverse document frequency for term:", term);
     console.log(`IDF - term: "${term}", document frequency: ${this.docFrequencies[term]}, total documents: ${this.totalDocs}`);
-    return Math.log(this.totalDocs / (1 + this.docFrequencies[term]));
+    console.log("idf:", Math.log(this.totalDocs / (this.docFrequencies[term])));
+    console.log(`idf: math.log( "${this.totalDocs}"/"${this.docFrequencies[term]}")` );
+
+    return Math.log(this.totalDocs / ( this.docFrequencies[term]));
   }
 
   tfidf(term, doc) {
+    console.log("computing TF-IDF for term "+ term+ " in doc: "+ doc);
     const tfValue = this.tf(term, doc);
     const idfValue = this.idf(term);
     const tfidfValue = tfValue * idfValue;
+
     console.log(`TF-IDF - term: "${term}", TF: ${tfValue}, IDF: ${idfValue}, TF-IDF: ${tfidfValue}`);
     return tfidfValue;
   }

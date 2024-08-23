@@ -7,7 +7,7 @@ import { newsApiKey, theNewsApiKey } from "./utils/ApiKey";
 
 import Aptabase from "@aptabase/react-native"; // Library for Aptabase, a GDPR-compliant database
 
-Aptabase.init("A-EU-8338648806"); // Aptabase API key
+Aptabase.init("A-EU-8251267602"); // Aptabase API key
 
 var xaiMode = true;
 
@@ -45,7 +45,9 @@ const API_URL = 'https://newsapi.org/v2/top-headlines';
 
 export default function App() {
   const [selectedThemes, setSelectedThemes] = useState([]);
-  const [selectedCountry, setSelectedCountry] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState('us');
+  const [selectedLanguageCode, setSelectedLanguageCode] = useState('en');
+
   // const [availableCountries, setAvailableCountries] = useState([]);
 
   // useEffect(() => {
@@ -59,7 +61,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <XaiModeProvider>
-        <UserPreferencesContext.Provider value={{ selectedThemes, setSelectedThemes, selectedCountry, setSelectedCountry }}>
+        <UserPreferencesContext.Provider value={{ selectedThemes, setSelectedThemes, selectedCountry, setSelectedCountry, selectedLanguageCode, setSelectedLanguageCode}}>
             <AppNavigation />
         </UserPreferencesContext.Provider>
       </XaiModeProvider>

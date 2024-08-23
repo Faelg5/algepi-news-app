@@ -26,18 +26,19 @@ export default function WelcomeScreen() {
       <Text className='font-bold text-4xl shadow-2xl text-white text-center tracking-wider'
       style={{ 
         fontSize: wp(10),
-        fontFamily: 'SpaceGroteskBold',
+        fontFamily: 'Helvetica',
        }}
         > 
-      Fair News
+        Explainews
         </Text>
 
         <Text className='text-white text-center max-w-[85%] leading-12 tracking-wider'
         style={{
           fontSize: wp(5),
-          fontFamily: 'SpaceGroteskMedium',
+          fontFamily: 'Helvetica',
+          fontWeight:'bold'
         }}>
-          Staying aware when reading news.
+          A more transparent news feed.
         </Text>
     </View>
 
@@ -46,7 +47,7 @@ export default function WelcomeScreen() {
           <Text className='text-white text-center font-bold tracking-wider'
           style={{
             fontSize: wp(5),
-            fontFamily: 'SpaceGroteskMedium',
+            fontFamily: 'Helvetica',
           }}>
             Get Started
           </Text>

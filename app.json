@@ -9,32 +9,39 @@
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F5F5F5"
     },
     "assetBundlePatterns": [
       "./assets/fonts/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.humanist.algepi-news-app"
+      "bundleIdentifier": "com.human-ist.algepi-news-app",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icons/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/icons/logo-humanist.png",
+        "backgroundColor": "#F5F5F5"
       },
-      "package": "com.humanist.algepi-news-app"
+      "package": "com.human-ist.algepi-news-app"
     },
     "web": {
       "favicon": "./assets/icons/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "d5f6a306-1c2f-440c-b154-64ab13834609"
+        "projectId": "bc637c89-818f-4eb0-9e28-7309f4dcb821"
       }
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/bc637c89-818f-4eb0-9e28-7309f4dcb821"
+    }
   }
 }
