@@ -5,7 +5,7 @@ import { useColorScheme } from 'nativewind';
 import MagnifyingGlassIcon from 'react-native-heroicons/solid/MagnifyingGlassIcon';
 import { ColorList } from "../constants/colors";
 
-export default function Header({ handleThemeChange }) {
+export default function SearchBar({ handleThemeChange }) {
   const { colorScheme, toggleColorScheme } = useColorScheme();
   const navigation = useNavigation();
 
@@ -26,25 +26,13 @@ export default function Header({ handleThemeChange }) {
 
   return (
     <View
-      className="flex-row justify-between items-center mx-0 mt-2"
+      className="flex-row justify-between mx-1"
       style={{ backgroundColor: isDarkMode ? '#999' : '#fff', padding: 2, borderRadius: 10}}
     >
-      <TouchableOpacity onPress={() => navigation.navigate('Home')}>
-        <Image
-          source={require('../../assets/images/welcome/logo-algepi.png')}
-          style={{
-            resizeMode: 'contain',
-            marginLeft: 20,
-            height: 30,
-            width: 60,
-            borderRadius: 15, // Add borderRadius for rounded corners
-          }}
-        />
-      </TouchableOpacity>
       <Text className="px-0 text-sm font-normal">
         {/* Empty text space */}
       </Text>
-      <View className="flex-row space-x-4 rounded-full justify-center items-center">
+      <View className="flex-row space-x-4 rounded-full justify-center items-center p-1">
         {/* Conditionally render the input field */}
         {isInputVisible && (
           <TextInput
@@ -52,7 +40,7 @@ export default function Header({ handleThemeChange }) {
             onChangeText={setInputText}
             onSubmitEditing={handleInputSubmit}
             autoFocus
-            placeholder="Enter theme..."
+            placeholder="Add theme..."
             style={{
               backgroundColor: isDarkMode ? '#333' : '#fff',
               color: isDarkMode ? '#fff' : '#000',
@@ -65,7 +53,7 @@ export default function Header({ handleThemeChange }) {
             }}
           />
         )}
-        {/* <TouchableOpacity
+        <TouchableOpacity
           onPress={() => {
             if (isInputVisible) {
               handleInputSubmit();
@@ -73,17 +61,17 @@ export default function Header({ handleThemeChange }) {
               setInputVisible(true); // Show the input field
             }
           }}
-          className="bg-gray-200 dark:bg-green-80 rounded-full p-2"
+          className="bg-gray-200 dark:bg-green-80"
           style={{
-            backgroundColor: isDarkMode ? '#333' : ColorList.backgroundSecondary, // Adjust background color for dark mode
+            backgroundColor: isDarkMode ? ColorList.primary : ColorList.backgroundSecondary, // Adjust background color for dark mode
           }}
         >
           <MagnifyingGlassIcon
             size={24}
             strokeWidth={2}
-            color={isDarkMode ? ColorList.primaryDark : ColorList.BackgroundPrimary}
+            color={isDarkMode ? ColorList.primary : ColorList.BackgroundPrimary}
           />
-        </TouchableOpacity> */}
+        </TouchableOpacity>
       </View>
     </View>
   );

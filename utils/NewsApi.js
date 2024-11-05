@@ -7,7 +7,24 @@ const theNewsApiBaseUrl = "https://api.thenewsapi.com/v1/news";
 const breakingNewsUrl = (country) => `${newsApiBaseUrl}/top-headlines?country=${country}&apiKey=${newsApiKey}`;
 const recommendedNewsUrl = (country, category) => `${newsApiBaseUrl}/top-headlines?country=${country}&category=${category}&apiKey=${newsApiKey}`;
 const discoverNewsUrl = (country, discover) => `${newsApiBaseUrl}/top-headlines?country=${country}&category=${discover}&apiKey=${newsApiKey}`;
-const everythingUrlNA = (q, language) => `${newsApiBaseUrl}/everything?q=(${q})&language=${language}&sortBy=relevancy&apiKey=${newsApiKey}`;
+const everythingUrlNA = (q, language) => {
+  const today = new Date();
+  const pastDate = new Date(today);
+  pastDate.setDate(today.getDate() - 30);
+
+  // Format the date to YYYY-MM-DD which is the format NewsAPI expects
+  const fromDate = pastDate.toISOString().split('T')[0];
+
+
+  /// IMPORTANT TODO PUT THIS BACK AFTER GETTING TO FILE ARTICLES
+  return `${newsApiBaseUrl}/everything?q=(${q})&language=${language}&sortBy=relevancy&from=${fromDate}&apiKey=${newsApiKey}&pageSize=10`;
+
+
+  // COMMENT THIS TODO IMPORTANT
+  // return `${newsApiBaseUrl}/everything?q=news&from=${pastDate}&to=${today}&language=${language}&sortBy=publishedAt&apiKey=${newsApiKey}`;
+
+
+};
 
 const urlTNA = (locale, categories) => `${theNewsApiBaseUrl}/top?api_token=${theNewsApiKey}&locale=${locale}&categories=${categories}`;
 
@@ -48,7 +65,7 @@ export const fetchRecommendedNews = async (country, category) => {
 
 export const fetchAllNewsNA = async (q, language) => {
   console.log("fetching all news from News API");
-  console.log("country: ", q);
+  console.log("terms: ", q);
   console.log("language: ", language);
 
   const url = everythingUrlNA(q, language);

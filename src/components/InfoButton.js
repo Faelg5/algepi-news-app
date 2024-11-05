@@ -10,7 +10,7 @@ export default function InfoButton({ label }) {
 
   return (
     <TouchableOpacity onPress={toggleInfo} style={styles.container}>
-      <Text style={styles.infoText}>i</Text>
+      <Text style={styles.infoText}>Why this article?</Text>
       {showInfo && <Text style={styles.additionalText}>{label}</Text>}
     </TouchableOpacity>
   );

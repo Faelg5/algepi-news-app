@@ -33,3 +33,6 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+algepi-news-service-account-key.json
+algepi-news-service-account-key.json
+utils/ApiKey.js

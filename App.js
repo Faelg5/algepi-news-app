@@ -3,11 +3,11 @@ import AppNavigation from "./src/navigation";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { LogBox } from "react-native";
 import { XaiModeProvider } from "./src/context/XaiModeContext";
-import { newsApiKey, theNewsApiKey } from "./utils/ApiKey";
+import { newsApiKey, aptabaseApiKey } from "./utils/ApiKey";
 
 import Aptabase from "@aptabase/react-native"; // Library for Aptabase, a GDPR-compliant database
 
-Aptabase.init("A-EU-8251267602"); // Aptabase API key
+Aptabase.init(aptabaseApiKey); // Aptabase API key
 
 var xaiMode = true;
 

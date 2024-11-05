@@ -17,14 +17,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.human-ist.algepi-news-app",
-      "buildNumber": "1"
+      "buildNumber": "3"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icons/logo-humanist.png",
         "backgroundColor": "#F5F5F5"
       },
-      "package": "com.human-ist.algepi-news-app"
+      "package": "com.frilance.algepinewsapp"
     },
     "web": {
       "favicon": "./assets/icons/favicon.png"

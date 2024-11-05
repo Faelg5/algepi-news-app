@@ -28,16 +28,16 @@ export default function MiniHeader({ label, explanation, includeVis, fillColor }
         <View style={[styles.bubble, styles.shadow]}>
           <Text style={styles.explanationText}>{explanation}</Text>
 
-          {/* {includeVis && (
+          {includeVis && (
             <Svg height="20" width="20">
               <Circle
                 cx="10"
                 cy="10"
                 r="8"
-                fill={'#000000'}
+                fill={fillColor}
               />
             </Svg>
-          )} */}
+          )}
         </View>
       )}
     </View>
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   headerText: {
-    fontSize: 20,
+    fontSize: 16,
     color: "#000",
     fontFamily: "Helvetica-Bold",
   },
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
   },
   infoButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#fff",
     fontFamily: "Helvetica-Bold",
   },

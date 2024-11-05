@@ -25,6 +25,7 @@ export class TfIdf {
     const terms = doc.split(/\W+/);
     const termCounts = {};
 
+    console.log("terms:", terms);
     terms.forEach(term => {
       if (!termCounts[term]) {
         termCounts[term] = 0;
@@ -68,6 +69,7 @@ export class TfIdf {
     console.log("computing inverse document frequency for term:", term);
     console.log(`IDF - term: "${term}", document frequency: ${this.docFrequencies[term]}, total documents: ${this.totalDocs}`);
     console.log("idf:", Math.log(this.totalDocs / (this.docFrequencies[term])));
+    console.log("idf: enable in tfidf.js to display (computes again)")
     console.log(`idf: math.log( "${this.totalDocs}"/"${this.docFrequencies[term]}")` );
 
     return Math.log(this.totalDocs / ( this.docFrequencies[term]));

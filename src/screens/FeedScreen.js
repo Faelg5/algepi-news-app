@@ -27,7 +27,11 @@ import {
 import Header from "../components/Header";
 import Loading from "../components/Loading";
 import MiniHeader from "../components/MiniHeader";
+import PrefMatchScore from "../components/PrefMatchScore";
 import ThemesCard from "../components/ThemesCard";
+import SearchBar from "../components/SearchBar";
+
+import { newsApiKey, theNewsApiKey, openAIApiKey } from "../../utils/ApiKey";
 
 import Counter from "../../src/components/Counter";
 import { ColorList } from "../constants/colors";
@@ -35,7 +39,12 @@ import { ColorList } from "../constants/colors";
 import { useFonts } from "expo-font";
 import Heatmap from "../components/Heatmap";
 import { UserPreferencesContext } from "../../App"; // Import context
-import { countries, languages, themes } from "./PreferencesScreen"; // Import countries and languages list
+import {
+  countries,
+  languages,
+  themes,
+  isTrackingEnabled,
+} from "./PreferencesScreen"; // Import countries and languages list
 import { TfIdf } from "../../utils/tfidf"; // Custom TF-IDF class
 import styles from "../constants/styles";
 
@@ -45,9 +54,10 @@ import translations from "../constants/translations"; // Import translations
 
 import { trackEvent } from "@aptabase/react-native";
 import Svg, { Circle } from "react-native-svg";
+import MagnifyingGlassIcon from "react-native-heroicons/solid/MagnifyingGlassIcon";
 
-const CHATGPT_API_KEY =
-  "";
+import * as FileSystem from "expo-file-system";
+
 const CHATGPT_API_URL = "https://api.openai.com/v1/chat/completions";
 
 const callOpenAIAPI = async (content) => {
@@ -75,7 +85,7 @@ const callOpenAIAPI = async (content) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer " + CHATGPT_API_KEY,
+        Authorization: "Bearer " + openAIApiKey,
       },
       body: JSON.stringify(APIBody),
     });
@@ -94,7 +104,7 @@ const callOpenAIAPI = async (content) => {
   }
 };
 
-const OpenAIThemeSummaryCall = async (content) => {
+const OpenAIThemeSummaryCall = async (content, currentThemes) => {
   console.log("--------------------------------------");
   console.log("CALLING AI SUMMARY API WITH THIS CONTENT:::");
   console.log(content);
@@ -106,12 +116,16 @@ const OpenAIThemeSummaryCall = async (content) => {
       {
         role: "system",
         content:
-          "You are an news app assistant specialized in to summarizing the text that I give you. You return a list of exactly 10 words from the list I provide you. The list represents the text, which means that the higher the count of a word in your summary, the more the text talks about this subject. You never say 'here's a tip,'. You directly give the answer in the form of a list of ten words from the list I provide you. You never mention that you are OpenAI. You never mention that you are based on ChatGPT. You are never disrespectful. You never mention another word than the ones I provide you.",
+          "You are an news app assistant specialized in to summarizing the text that I give you. You return a list of exactly 30 words from the list I provide you. The list represents the text, which means that the higher the count of a word in your summary, the more the text talks about this subject. You never say 'here's a tip,'. You directly give the answer in the form of a list of thirty words from the list I provide you. You never mention that you are OpenAI. You never mention that you are based on ChatGPT. You are never disrespectful. You never mention another word than the ones I provide you.",
       },
       {
         role: "user",
         content:
-          "Your role is to return a list of terms that summarize the text using only ten words from the list I give you. For example you can return something like: politics, sports, health, entertainment, tech,politics, sports, health, entertainment, tech. Add the word more times if you see it appears frequently in the article I give you at the end of the prompt. Select the terms only from the given list, in an objective, neutral and respectful way. Return only a list of words that summarize the themes in the given text, using exclusively the terms listed here: "+ themes.join(', ')+". Never include a full sentence or another word than one of these specific terms I just mentioned, separated with commas. The only exception is if the document contains [Removed], then return a single white space character only. Here is the document to summarize:" +
+          "Your role is to return a list of terms that summarize the text using only thirty words from the list I give you. For example you can return something like: politics, sports, health, entertainment, tech,politics, sports, health, entertainment, tech. Add the word more times if you see it appears frequently in the article I give you at the end of the prompt. Select the terms only from the given list, in an objective, neutral and respectful way. Return only a list of words that summarize the themes in the given text, using exclusively the terms listed here: " +
+          currentThemes.join(", ") +
+          ". Never include a full sentence or another word than one of these specific terms I just mentioned, separated with commas. Please note: if the document I provide you contains [Removed], please return a only single white space character. Never, ever say another word than one that is here: " +
+          currentThemes.join(", ") +
+          ". Here is the document to summarize:" +
           content,
       },
     ],
@@ -124,7 +138,7 @@ const OpenAIThemeSummaryCall = async (content) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer " + CHATGPT_API_KEY,
+        Authorization: "Bearer " + openAIApiKey,
       },
       body: JSON.stringify(APIBody),
     });
@@ -154,9 +168,14 @@ const OpenAIThemeSummaryCall = async (content) => {
   }
 };
 
-const generateSummaryWithRetry = async (content, retries = 3, delay = 1000) => {
+const generateSummaryWithRetry = async (
+  content,
+  currentThemes,
+  retries = 3,
+  delay = 1000
+) => {
   for (let attempt = 1; attempt <= retries; attempt++) {
-    const summary = await OpenAIThemeSummaryCall(content);
+    const summary = await OpenAIThemeSummaryCall(content, currentThemes);
     if (
       summary !== "No summary available" &&
       summary !== "Error calling OpenAI API"
@@ -203,7 +222,10 @@ export default function FeedScreen({ navigation }) {
   ); // Use context to get user preferences
 
   const [source, setSource] = useState("newsApi");
+  const [unsortedNewsData, setUnsortedNewsData] = useState([]);
   const [newsData, setNewsData] = useState([]);
+  const [pageSize, setPageSize] = useState([]);
+
   const [isLoading, setIsLoading] = useState(true);
   // const [source, setSource] = useState("theNewsApi");
   const [newsWithSentiments, setNewsWithSentiments] = useState([]);
@@ -215,6 +237,7 @@ export default function FeedScreen({ navigation }) {
   const [localSelectedThemes, setLocalSelectedThemes] =
     useState(selectedThemes);
   const [andOperator, setAndOperator] = useState(false);
+  const [sortByMatch, setSortByMatch] = useState(false);
 
   const [htmlContent, setHtmlContent] = useState("");
 
@@ -249,7 +272,10 @@ export default function FeedScreen({ navigation }) {
   var currentCountryName;
 
   const fetchNews = async (calledFrom) => {
-    console.log("fetching news, called from: " + calledFrom);
+    // Reset the tfidf instance at the beginning of fetching news
+    tfidf.current = new TfIdf();
+
+    console.log("fetching neeews, called from: " + calledFrom);
     console.log("fetching news with these themes...");
     console.log(localSelectedThemes);
     setIsLoading(true);
@@ -278,8 +304,10 @@ export default function FeedScreen({ navigation }) {
 
     if (response) {
       let articles = [];
-      // console.log("RESPONSE:");
-      // console.log(response);
+      console.log("RESPONSE:");
+      response.data.articles.forEach((article) => {
+        console.log(article.title);
+      });
 
       if (source === "theNewsApi" && response.data) {
         articles = response.data.map((item) => ({
@@ -295,9 +323,35 @@ export default function FeedScreen({ navigation }) {
         // setIsLoading(false); // Set isLoading to false after data is fetched
       } else if (response.data) {
         // Filter out articles with null descriptions
-        articles = articles.filter((article) => article.description !== null);
-
         articles = response.data.articles;
+
+        articles = articles.filter(
+          (article) =>
+            article.description !== null &&
+            !article.description.includes("REMOVED")
+        );
+
+        console.log("Saving " + articles.length +  " articles:");
+
+        /// SAVE TO A FILE
+        // Convert the articles to JSON
+        const jsonData = JSON.stringify(articles, null, 2);
+
+        // Define the path to save the file (in the app's document directory)
+        const fileUri = FileSystem.documentDirectory + "filteredArticles.json";
+
+        // Write the JSON data to a file
+        FileSystem.writeAsStringAsync(fileUri, jsonData)
+          .then(() => {
+            console.log("Filtered articles saved to", fileUri);
+          })
+          .catch((error) => {
+            console.error("Error saving file:", error);
+          });
+
+        console.log(articles);
+        // setNewsData(articles.slice(0, 3)); // set newsData variable as the articles, limit to 3 articles
+
         //    articles = [
         //     {
         //         "author": "Anna Washenko",
@@ -340,8 +394,9 @@ export default function FeedScreen({ navigation }) {
         //         "urlToImage": "https://ichef.bbci.co.uk/news/1024/branded_news/3dad/live/672ec690-4ec4-11ef-a307-c9d56a508b94.jpg"
         //     }
         // ];
-        // setNewsData(articles.slice(0, 3)); // set newsData variable as the articles, limit to 3 articles
-        setNewsData(articles); // set newsData variable as the articles, limit to 3 articles
+        // setNewsData(articles); // set newsData variable as the articles, limit to 3 articles
+        // Wait for the newsData state to update
+        return articles;
 
         console.log("set news data from the fetchnewz");
 
@@ -369,7 +424,8 @@ export default function FeedScreen({ navigation }) {
   const generateSummary = async (articles) => {
     const summarizedNews = await Promise.all(
       articles.map(async (article) => {
-        const summary = await callOpenAIAPI(article.title);
+        // const summary = await callOpenAIAPI(article.title);
+        const summary = "no_summary";
         return {
           ...article,
           summary,
@@ -395,10 +451,26 @@ export default function FeedScreen({ navigation }) {
   // };
 
   // Définir la couleur du cercle en fonction du score
+  // const getColor = (score) => {
+  //   if (score > 50) return "#4CAF50"; // Vert pour un score élevé
+  //   if (score > 20) return "#FFC107"; // Jaune pour un score moyen
+  //   return "#F44336"; // Rouge pour un score bas
+  // };
+
   const getColor = (score) => {
-    if (score > 50) return "#4CAF50"; // Vert pour un score élevé
-    if (score > 20) return "#FFC107"; // Jaune pour un score moyen
-    return "#F44336"; // Rouge pour un score bas
+    if (score >= 80) return "#1a9850"; // Dark green
+    if (score >= 70) return "#66bd63"; // Light green
+    if (score >= 60) return "#a6d96a"; // Yellow-green
+    if (score >= 50) return "#d9ef8b"; // Yellow
+    if (score >= 54) return "#fee08b"; // Light orange
+    if (score >= 30) return "#fdae61"; // Orange
+    if (score >= 20) return "#f46d43"; // Red-orange
+    if (score >= 10) return "#d73027"; // Red
+    return "#a50026"; // Dark red for scores below 10
+  };
+
+  const capitalizeFirstLetter = (string) => {
+    return string.replace(/\b\w/g, (char) => char.toUpperCase());
   };
 
   const calculateAverages = () => {
@@ -451,7 +523,8 @@ export default function FeedScreen({ navigation }) {
           console.log("-----------------");
 
           article.aiSummary = await generateSummaryWithRetry(
-            article.title + " "+ article.description
+            article.title + " " + article.description,
+            localSelectedThemes
           );
         } else {
           article.aiSummary = ""; // default summary is an empty string
@@ -465,6 +538,8 @@ export default function FeedScreen({ navigation }) {
         console.log("Summary generation failed!");
         article.aiSummary = "default summary"; // Provide a fallback summary
       } else {
+
+
         // Iterate over displayedNews and ensure aiSummary is correctly processed
         // newsData.forEach((article) => {
         //   console.log("add this article: " + article.title);
@@ -486,13 +561,22 @@ export default function FeedScreen({ navigation }) {
         //   console.log("article summary: " + summary);
         //   console.log("______________________");
 
-        tfidf.addDocument(article.aiSummary);
+
+        // replacement code for the export to the file
+        // article.aiSummary = "default summary"; // Provide a fallback summary
+        // tfidf.current.addDocument(article.aiSummary);
+
+        ///// UNCOMMENT THIS BELOW!!! IMPORTANT TODO !!!!!
+        tfidf.current.addDocument(article.aiSummary);
+
+
+
+
         console.log("-------- ADDING Article TO TFIDF -----------");
         console.log("Article");
         console.log(article.aiSummary);
-        console.log("Total documents: " + tfidf.documents);
+        console.log("Total documents: " + tfidf.current.documents);
 
-        // });
       }
     } else {
       console.log("No content to summarize");
@@ -500,10 +584,10 @@ export default function FeedScreen({ navigation }) {
     return;
   };
 
-
   // console.log("LOCAL SELECTED THEMES:::");
   // console.log(localSelectedThemes);
-  const processNewsData = async () => {
+  const processNewsData = async (calledFrom) => {
+    console.log("Processing news data, called from: " + calledFrom);
     if (!newsData || newsData.length === 0) {
       console.log("No news data available");
       setIsLoading(false);
@@ -514,56 +598,68 @@ export default function FeedScreen({ navigation }) {
       // First, process all summaries
       await Promise.all(
         newsData.map(async (article) => {
-          await createSummary(article); // Assuming createSummary is an async function
+          await createSummary(article); // Since createSummary is an async function
         })
       );
+
+      // console.log("News Data after processing summaries:");
+      // console.log(newsData);
 
       // Now, process TF-IDF after all summaries are done
       const updatedNewsData = await Promise.all(
         newsData.map(async (article) => {
           let scores;
           if (localSelectedThemes.length > 0) {
+            console.log("TF IDF - ARTICLE SUMMARY BEFORE PROCESSING:");
+            console.log(article.aiSummary);
+
+            console.log("TF IDF CONTENT:");
+            console.log(tfidf.current.documents);
+
             scores = localSelectedThemes.map((term) =>
-              tfidf.tfidf(term, article.aiSummary)
+              tfidf.current.tfidf(term, article.aiSummary)
             );
           } else {
+            console.log("localSelectedThemes is empty");
             scores = [0];
           }
           // Save the result of the reduce operation in a variable
           const totalScore = scores.reduce((acc, score) => acc + score, 0);
+          // const totalScore = scores;
 
+          console.log("SCORES: " + scores);
           // Log the total score
           console.log("Total TF-IDF Score:", totalScore);
 
           // Assign the total score to the article's tfidfScore property
-          article.tfidfScore = totalScore * 150;
+          article.tfidfScore = totalScore * 100;
+
+          article.tfidfScores = scores.map((score) => score * 100);
 
           return article;
         })
       );
-
+      // console.log("Updated News Data: ");
+      // console.log(updatedNewsData);
       setNewsData(updatedNewsData);
-      console.log("set news data from the activeTheme USEFFECT");
+      setUnsortedNewsData(newsData);
+
+      setIsLoading(false);
+
+      // console.log("set news data from the localselectedThemeschanged or andOperatorChanged USEFFECT");
     }
   };
-
-
-
-
-
-
-
-
-
-
-
-
 
   useEffect(() => {
     console.log("---------ACTIVE THEME USEEFFECT--------");
     console.log("active theme: " + activeTheme);
     // toggleTheme(activeTheme);
   }, [activeTheme]);
+
+  useEffect(() => {
+    console.log("---------PageSize USEEFFECT--------");
+    console.log("Page size changed to: " + pageSize);
+  }, [pageSize]);
 
   useEffect(() => {
     if (localSelectedThemes.length < 2) {
@@ -590,14 +686,79 @@ export default function FeedScreen({ navigation }) {
       hasMounted.current = true;
       return;
     }
-    if (!isLoading) {
-      console.log("selected themes:::: " + localSelectedThemes);
-      fetchNews("localselectedthemess changed");
-    }
-    processNewsData().catch((error) => console.log("error: " + error));
+    // if (!isLoading) {
+    console.log("selected themes:::: " + localSelectedThemes);
+    fetchNews("localselectedthemess changed")
+      .then((fetchedNewsData) => {
+        console.log("fetched news data: ");
 
-  
+        setNewsData(fetchedNewsData);
+        setUnsortedNewsData(fetchedNewsData);
+
+        processNewsData("localSelectedThemes useEffect")
+          .then(() => {
+            if (sortByMatch) {
+              console.log("Sorting by match");
+              // Save the current newsData to unsortedNewsData if it's not already saved
+              if (unsortedNewsData.length === 0) {
+                setUnsortedNewsData([...newsData]);
+              }
+
+              // Sort and update newsData
+              const sortedNewsData = [...newsData].sort(
+                (a, b) => b.tfidfScore - a.tfidfScore
+              );
+              // console.log("sorted news data: ");
+              // console.log(newsData[2].tfidfScore)
+              setNewsData(sortedNewsData);
+            } else {
+              console.log(
+                "Resetting to default sort order (localSelectedThemes)"
+              );
+
+              // Reset to the original unsorted data
+              if (unsortedNewsData.length > 0) {
+                setNewsData([...unsortedNewsData]);
+              }
+            }
+          })
+          .catch((error) => console.log("error: " + error));
+      })
+      .catch((error) => console.log("Fetch news error: " + error));
+    // }
   }, [localSelectedThemes]);
+
+  useEffect(() => {}, [newsData]);
+
+  useEffect(() => {
+    if (!hasMounted.current) {
+      // This will run only on the initial render
+      hasMounted.current = true;
+      return;
+    }
+    if (!isLoading) {
+      setUnsortedNewsData(newsData);
+    }
+  }, [unsortedNewsData]);
+
+  // useEffect(() => {
+  //   if (!hasMounted.current) {
+  //     // This will run only on the initial render
+  //     hasMounted.current = true;
+  //     return;
+  //   }
+
+  //   if (!isLoading) {
+  //     // fetchNews("andOperatorchangeds");
+  //     if (!isLoading) {
+  //       console.log("selected themes:::: " + localSelectedThemes);
+  //       fetchNews("andOperatorchanged");
+  //     }
+  //     // processNewsData("andOperator useEffect").catch((error) => console.log("error: " + error));
+
+  //     console.log("AND operator is now: " + andOperator);
+  //   }
+  // }, [andOperator]);
 
   useEffect(() => {
     if (!hasMounted.current) {
@@ -606,17 +767,27 @@ export default function FeedScreen({ navigation }) {
       return;
     }
 
-    if (!isLoading) {
-      // fetchNews("andOperatorchangeds");
-      if (!isLoading) {
-        console.log("selected themes:::: " + localSelectedThemes);
-        fetchNews("andOperatorchanged");
+    if (sortByMatch) {
+      console.log("Sorting by match");
+      // Save the current newsData to unsortedNewsData if it's not already saved
+      if (unsortedNewsData.length === 0) {
+        setUnsortedNewsData([...newsData]);
       }
-      processNewsData().catch((error) => console.log("error: " + error));
 
-      console.log("AND operator is now: " + andOperator);
+      // Sort and update newsData
+      const sortedNewsData = [...newsData].sort(
+        (a, b) => b.tfidfScore - a.tfidfScore
+      );
+      setNewsData(sortedNewsData);
+    } else {
+      console.log("Resetting to default sort order (sortByMatch)");
+
+      // Reset to the original unsorted data
+      if (unsortedNewsData.length > 0) {
+        setNewsData([...unsortedNewsData]);
+      }
     }
-  }, [andOperator]);
+  }, [sortByMatch]);
 
   useEffect(() => {
     if (!hasMounted.current) {
@@ -643,22 +814,6 @@ export default function FeedScreen({ navigation }) {
       // fetchNews();
     }
   }, [showSummaries]);
-
-  useEffect(() => {
-    if (!hasMounted.current) {
-      // This will run only on the initial render
-      hasMounted.current = true;
-      return;
-    }
-    setIsLoading(false);
-    console.log("---------NEWS DATA USEEFFECT----------");
-    console.log("selected themes:::: " + localSelectedThemes);
-    console.log("newsData in newsdata useeffect is now:");
-
-    newsData.forEach((article) => {
-      console.log("Title:", article.title);
-    });
-  }, [newsData]);
 
   const [fontsLoaded, fontError] = useFonts({
     SpaceGroteskMedium: require("../fonts/SpaceGrotesk-Medium.ttf"),
@@ -722,7 +877,9 @@ export default function FeedScreen({ navigation }) {
   };
 
   const handleNewsDetailsClick = (item) => {
-    incrementNewsItemClick();
+    if (isTrackingEnabled) {
+      incrementNewsItemClick();
+    }
     navigation.navigate("NewsDetails", { item });
   };
 
@@ -741,7 +898,12 @@ export default function FeedScreen({ navigation }) {
         return prevThemes.filter((t) => t !== theme);
       } else {
         console.log("Adding theme:", theme);
-        // Add theme
+        if (!themes.includes(theme)) {
+          // if displayed themes list does not include the theme, add it
+          // Add theme
+          themes.unshift(theme);
+        }
+        // return previous themes along with theme
         return [...prevThemes, theme];
       }
     });
@@ -751,6 +913,46 @@ export default function FeedScreen({ navigation }) {
 
   const toggleAndOperator = () => {
     setAndOperator((prev) => !prev);
+    console.log("selected themes:::: " + localSelectedThemes);
+    fetchNews("localselectedthemess changed")
+      .then((fetchedNewsData) => {
+        console.log("fetched news data: ");
+
+        setNewsData(fetchedNewsData);
+        setUnsortedNewsData(fetchedNewsData);
+
+        processNewsData("localSelectedThemes useEffect")
+          .then(() => {
+            if (sortByMatch) {
+              console.log("Sorting by match");
+              // Save the current newsData to unsortedNewsData if it's not already saved
+              if (unsortedNewsData.length === 0) {
+                setUnsortedNewsData([...newsData]);
+              }
+
+              // Sort and update newsData
+              const sortedNewsData = [...newsData].sort(
+                (a, b) => b.tfidfScore - a.tfidfScore
+              );
+              setNewsData(sortedNewsData);
+            } else {
+              console.log(
+                "Resetting to default sort order (toggleAndOperator)"
+              );
+
+              // Reset to the original unsorted data
+              if (unsortedNewsData.length > 0) {
+                setNewsData([...unsortedNewsData]);
+              }
+            }
+          })
+          .catch((error) => console.log("error: " + error));
+      })
+      .catch((error) => console.log("Fetch news error: " + error));
+  };
+
+  const toggleSortByMatch = () => {
+    setSortByMatch((prev) => !prev);
   };
 
   function formatDate(isoDate) {
@@ -782,18 +984,20 @@ export default function FeedScreen({ navigation }) {
     selectedLanguageCode || "en"
   );
 
-  const tfidf = new TfIdf();
+  // const tfidf = new TfIdf();
+  const tfidf = useRef(new TfIdf()); // Preserved across renders
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView className="my-10" style={styles.container}>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-      <Header />
-      <MiniHeader
-        label={translations[selectedLanguageCode].greeting}
-        explanation={translations[selectedLanguageCode].newsSourceExplanation}
-      />
+      <Header handleThemeChange={changeTheme} />
 
-      <View className="flex-row mx-4">
+      <View
+        style={[styles.themesContainer, { alignItems: "center" }]}
+        className="flex-row mx-2 my-4"
+      >
+        <SearchBar style={styles.searchBar} handleThemeChange={changeTheme} />
+
         <ThemesCard
           themes={themes}
           activeTheme={activeTheme}
@@ -802,32 +1006,38 @@ export default function FeedScreen({ navigation }) {
         />
       </View>
 
-      <View className="flex-row-reverse my-4 mx-4 ">
+      <View className="flex-row my-0 mx-0" style={{}}>
         {isVisible && (
           <Animated.View
-            className="flex-row-reverse my-4 mx-4 "
-            style={[styles.switchContainer, { opacity: fadeAnim }]}
+            className="flex-row my-0 mx-3"
+            style={[
+              styles.switchContainer,
+              {
+                opacity: fadeAnim,
+                justifyContent: "center",
+                alignItems: "center",
+                height: "100%",
+              },
+            ]}
           >
             <Switch
               style={styles.switch}
               value={andOperator}
               onChange={toggleAndOperator}
             />
-            <Text className="my-2 mx-2 " style={styles.noPreferencesText}>
-              {/* <Text className="my-2 mx-2 " style={styles.noPreferencesText}> */}
+
+            <Text className="my-0 mx-4" style={styles.noPreferencesText}>
               {translations[selectedLanguageCode].newsMustContainAllThemes}
             </Text>
           </Animated.View>
         )}
-        {/* 
-        <Switch value={andOperator} onChange={toggleAndOperator} />
-        <Text className="my-2 mx-2 " style={styles.noPreferencesText}>
-          {translations[selectedLanguageCode].newsMustContainAllThemes}
-        </Text> */}
       </View>
-      <Text style={styles.subTitle}>
-        {translations[selectedLanguageCode].subtitle}{" "}
-        {getLanguageName(selectedLanguageCode)}.
+
+      <Text className="my-2 mx-2 " style={styles.noPreferencesText}>
+        {translations[selectedLanguageCode].found} {newsData.length}{" "}
+        {translations[selectedLanguageCode].articlesIn}{" "}
+        {getLanguageName(selectedLanguageCode)}{" "}
+        {translations[selectedLanguageCode].sinceWhen}.
       </Text>
 
       {/* <View style={styles.preferencesContainer}>
@@ -870,9 +1080,56 @@ export default function FeedScreen({ navigation }) {
       </View> */}
 
       {isLoading ? (
-        <Loading />
+        localSelectedThemes.length === 0 ? (
+          <View className="flex-col my-4 mx-4">
+            <Text className="my-0 mx-2 " style={styles.subTitle}>
+              {/* <Text className="my-2 mx-2 " style={styles.noPreferencesText}> */}
+              {translations[selectedLanguageCode].noThemesSelected}
+            </Text>
+          </View>
+        ) : (
+          <>
+            <Loading />
+            <Text
+              className="text-m text-gray-700 dark:text-neutral-400"
+              style={{ textAlign: "center" }}
+            >
+              Loading news feed and analyzing feed relevance...{" "}
+            </Text>
+          </>
+        )
       ) : (
         <>
+          <View
+            className={`flex-row ${
+              colorScheme === "dark" ? "bg-black" : "bg-gray-200"
+            }`}
+            style={{ alignItems: "center" }}
+          >
+            <MiniHeader
+              className="bg-gray"
+              label={translations[selectedLanguageCode].greeting}
+              explanation={
+                translations[selectedLanguageCode].newsSourceExplanation
+              }
+            />
+            <View
+              className="flex-row align-middle flex-wrap rounded-lg bg-gray-200 mt-0"
+              style={{ alignItems: "center" }}
+            >
+              <Text
+                className="my-2 mx-2"
+                style={[styles.subTitle, { width: "50%" }]}
+              >
+                {translations[selectedLanguageCode].sortByMatch}
+              </Text>
+              <Switch
+                className="my-2 mx-0 flex-wrap"
+                value={sortByMatch}
+                onChange={toggleSortByMatch}
+              />
+            </View>
+          </View>
           {Array.isArray(newsData) && newsData.length > 0 ? (
             <ScrollView>
               <View
@@ -881,13 +1138,14 @@ export default function FeedScreen({ navigation }) {
               >
                 {newsData.map((article, index) => (
                   <TouchableOpacity
-                    className="mb-4 mx-4 space-y-1"
+                    className="mb-4 mx-4 space-y-1 p-4 rounded bg-gray-50"
                     key={index}
                     onPress={() => handleNewsDetailsClick(article)}
                   >
-                    <View className="flex-row justify-start w-[100%] shadow-sm">
+                    <View className="flex-row justify-start w-[100%] shadow-sm ">
                       {article && article.urlToImage ? (
                         <Image
+                          className="rounded"
                           source={{
                             uri:
                               article.urlToImage ||
@@ -909,7 +1167,7 @@ export default function FeedScreen({ navigation }) {
                         </Text>
                         {article.description && (
                           <Text
-                            className="text-neutral-800 capitalize max-w-[90%] dark:text-white"
+                            className="text-neutral-800 capitalize max-w-[95%] dark:text-white"
                             style={{
                               fontWeight: showSummaries ? "normal" : "bold",
                               marginTop: 10,
@@ -928,20 +1186,59 @@ export default function FeedScreen({ navigation }) {
                       </View>
                     </View>
                     {article.tfidfScore && (
-                          <View style={{ flexDirection: "row", alignItems: "center" }}>
-                          <Svg height="20" width="20">
-                            <Circle
-                              cx="10"
-                              cy="10"
-                              r="8"
-                              fill={getColor(article.tfidfScore)}
-                            />
-                          </Svg>
-                          <Text style={{ marginLeft: 8 }}>Pref. Match: {Math.round(article.tfidfScore)}</Text>
-                        </View>
+                      <View
+                        style={{ flexDirection: "row", alignItems: "left" }}
+                      >
+                        {/* <PrefMatchScore
+                          className="bg-gray"
+                          label={
+                            translations[selectedLanguageCode].prefMatchTitle +
+                            ": " +
+                            article.tfidfScore +
+                            ""
+                          }
+                          explanation={
+                            translations[selectedLanguageCode]
+                              .newsSourceExplanation
+                          }
+                          includeVis={true}
+                          fillColor={getColor(article.tfidfScore)}
+                        /> */}
+                        <View style={styles.tfidfScoreContainer}>
+                          {article.tfidfScores.map((score, index) => (
+                            <View
+                              key={index}
+                              style={styles.tfidfScoreContainer}
+                            >
+                              {/* Display the selected theme title instead of prefMatchTitle */}
+                              <Text style={styles.themeTitle}>
+                                {capitalizeFirstLetter(
+                                  localSelectedThemes[index]
+                                ) +
+                                  ": " +
+                                  Math.round(score)}
+                              </Text>
 
-                      
-                      
+                              {/* Horizontal colored bar proportional to the TF-IDF score */}
+                              <View style={styles.barContainer}>
+                                <View
+                                  style={[
+                                    styles.tfidfBar,
+                                    {
+                                      backgroundColor: getColor(score), // Color based on score
+                                      width: `${score * 3}%`, // Proportional width based on score, scaled to 300%
+                                    },
+                                  ]}
+                                />
+                              </View>
+                            </View>
+                          ))}
+                        </View>
+                        {/* 
+                        <Text style={{ marginLeft: 8 }}>
+                          {Math.round(article.tfidfScore) + "% "}
+                        </Text> */}
+                      </View>
                     )}
                     <TouchableOpacity
                       onPress={() =>
@@ -973,7 +1270,17 @@ export default function FeedScreen({ navigation }) {
               </View>
             </ScrollView>
           ) : (
-            <Loading />
+            <>
+              <View style={styles.articlesContainer}>
+                <Loading />
+                <Text
+                  className="text-m text-gray-700 dark:text-neutral-400"
+                  style={{ textAlign: "center" }}
+                >
+                  Loading news feed and analyzing feed relevance...{" "}
+                </Text>
+              </View>
+            </>
           )}
         </>
       )}
@@ -986,6 +1293,17 @@ const feedStyles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+  },
+  themesContainer: {
+    height: 20,
+    alignItems: "center",
+    verticalAlign: "center",
+    backgroundColor: "red",
+  },
+  searchBar: {
+    height: 26,
+    backgroundColor: ColorList.primary,
+    margin: 10,
   },
   switchContainer: {
     flexDirection: "row-reverse",

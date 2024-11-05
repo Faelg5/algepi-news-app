@@ -1,5 +1,5 @@
-import { StyleSheet, Dimensions, PixelRatio } from 'react-native';
-import { ColorList } from './colors.js';
+import { StyleSheet, Dimensions, PixelRatio } from "react-native";
+import { ColorList } from "./colors.js";
 
 export default StyleSheet.create({
   // Existing styles
@@ -10,6 +10,9 @@ export default StyleSheet.create({
   },
   inputContainer: {
     marginBottom: 16,
+  },
+  searchBar: {
+    margin: 8,
   },
   textArea: {
     height: 10,
@@ -92,6 +95,8 @@ export default StyleSheet.create({
     fontSize: 12,
   },
   subTitle: {
+    fontSize: 16,
+    color: "#666",
     marginLeft: 15,
   },
   subHeader: {
@@ -121,52 +126,52 @@ export default StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#e0e0e0',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#e0e0e0",
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 2, // Ensure the "i" button is above everything
   },
   infoButtonActive: {
-    backgroundColor: '#000',
+    backgroundColor: "#000",
   },
   infoButtonText: {
     fontSize: 14,
-    color: '#fff',
-    fontFamily: 'Helvetica-Bold',
+    color: "#fff",
+    fontFamily: "Helvetica-Bold",
   },
   bubble: {
-    backgroundColor: 'rgba(255, 255, 255, 1)',
+    backgroundColor: "rgba(255, 255, 255, 1)",
     borderRadius: 10,
     padding: 10,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
-    position: 'absolute',
-    top: '200%', // Position it below the header
+    position: "absolute",
+    top: "200%", // Position it below the header
     right: 10, // Adjust right position as needed
     // maxWidth: '65%', // Limit width to 80% of the parent width
-    width: 50 + '%',
-    height: 'auto',
+    width: 50 + "%",
+    height: "auto",
     zIndex: 999, // Lower zIndex to ensure it's below the "i" button
     flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'flex-start',
-    justifyContent: 'flex-start'
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
   },
   shadow: {
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
   },
   explanationText: {
-    fontFamily: 'Helvetica',
-    color: '#000',
-    textAlign: 'left',
+    fontFamily: "Helvetica",
+    color: "#000",
+    textAlign: "left",
     lineHeight: 14,
     zIndex: 1000, // Lower zIndex to ensure it's below the "i" button
   },
@@ -226,12 +231,45 @@ export default StyleSheet.create({
   pickerContainer: {
     borderWidth: 1,
     borderRadius: 5,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     marginVertical: 10,
-    width: '100%',
+    width: "100%",
   },
   picker: {
     height: 50,
-    width: '100%',
+    width: "100%",
+  },
+  switch: {
+    marginVertical: 10,
+  },
+  trackingContainer: {
+    flexDirection: "column",
+    alignItems: "left",
+    justifyContent: "space-between",
+    marginVertical: 10,
+  },
+  tfidfScoreContainer: {
+    display: "flex",
+    flexDirection: "column",
+    marginBottom: 0, // Add margin between each section
+  },
+  tfidfBar: {
+    height: 10, // Height of the bar
+    borderRadius: 5, // Rounded corners for the bar
+  },
+  barContainer: {
+    width: '100%', // Ensure the container takes up full width
+    backgroundColor: "#e0e0e0", // Grey background for context
+    borderRadius: 5, // Rounded corners
+    overflow: "hidden", // Ensures the inner bar stays inside the container
+    marginBottom: 0, // Add space between bars and other elements
+  },
+  themeTitle: {
+    fontSize: 16, // Set the font size
+    fontWeight: "bold", // Make text bold
+    marginBottom: 2, // Add space below the title
+  },
+  bgGray: {
+    marginBottom: 0, // Use a numeric value instead of "10px"
   },
 });

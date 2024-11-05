@@ -11,7 +11,7 @@ export default function ThemesCard({ themes, activeTheme, handleThemeChange,  lo
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        className="space-x-4"
+        className="space-x-1"
         contentContainerStyle={{
           paddingRight: 20,
         }}

@@ -48,8 +48,8 @@ export default function AppNavigation() {
                         else if (route.name === 'Ask GPT') {
                             iconName = focused ? 'chatbubble-ellipses-sharp' : 'chatbubble-ellipses-outline';
                         }
-                        else if (route.name === 'Preferences') {
-                            iconName = focused ? 'cog' : 'cog-outline';
+                        else if (route.name === 'Profile') {
+                            iconName = focused ? 'person-sharp' : 'person-outline';
                         }
                         const customSize = 24;
 
@@ -91,7 +91,7 @@ export default function AppNavigation() {
                 <Stack.Screen name="Welcome" component={WelcomeScreen} />
                 <Stack.Screen name="Themes summary" component={SummariesScreen} />
                 <Stack.Screen name="Ask GPT" component={AskGPTScreen} />
-                <Stack.Screen name="Profile" component={PreferencesScreen} />
+                <Stack.Screen name="Preferences" component={PreferencesScreen} />
 
 
                 <Stack.Screen
