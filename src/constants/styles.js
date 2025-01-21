@@ -272,4 +272,25 @@ export default StyleSheet.create({
   bgGray: {
     marginBottom: 0, // Use a numeric value instead of "10px"
   },
+  heatmapContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    marginVertical: 10,
+  },
+  heatmapBlock: {
+    width: 60,
+    height: 30,
+    margin: 4,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 4,
+  },
+  heatmapText: {
+    fontSize: 10,
+    color: "#FFFFFF",
+    textAlign: "center",
+  },
+  topicText: { fontSize: 16, padding: 5, marginVertical: 2 },
+  noRecommendations: { fontSize: 14, color: "gray" },
 });

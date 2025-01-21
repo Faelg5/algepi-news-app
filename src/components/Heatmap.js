@@ -1,71 +1,36 @@
-import React from "react";
-import { View, StyleSheet, Text } from "react-native";
-
-const Heatmap = ({ data, height = 50, showValues = true }) => {
-  const labels = ["User Preferences", "Content Similarity", "User Behavior", "Other"];
-
-  // Ensure we have exactly 4 items for the heatmap
-  const items = data.slice(0, 4);
-
-  // Calculate the maximum value for normalization
-  const maxValue = Math.max(...items.map(item => item.value));
-
-  // Function to interpolate between two colors
-  const interpolateColor = (value) => {
-    const startColor = { r: 255, g: 255, b: 255 }; // #B2E2E2
-    const endColor = { r: 6, g: 90, b: 130 };     // #065A82
-
-    const factor = value / maxValue;
-    const r = Math.round(startColor.r + factor * (endColor.r - startColor.r));
-    const g = Math.round(startColor.g + factor * (endColor.g - startColor.g));
-    const b = Math.round(startColor.b + factor * (endColor.b - startColor.b));
-
-    return `rgb(${r}, ${g}, ${b})`;
-  };
-
-  return (
-    <View style={[styles.heatmapContainer, { height }]}>
-      {items.map((item, index) => {
-        const backgroundColor = interpolateColor(item.value);
-        
-        return (
-          <View
-            key={index}
-            style={[
-              styles.heatmapSquare,
-              { backgroundColor },
-            ]}
-          >
-            {showValues && <Text style={styles.labelText}>{labels[index]}: {item.value.toFixed(1)}</Text>}
-          </View>
-        );
-      })}
-    </View>
-  );
+const getColorForValue = (value) => {
+  if (value === 0) return "#E0F7FA"; // Bleu clair
+  if (value < 5) return "#80DEEA";
+  if (value < 10) return "#00BCD4";
+  if (value < 20) return "#00838F";
+  return "#004D40"; // Bleu profond
 };
 
-const styles = StyleSheet.create({
-  heatmapContainer: {
-    flexDirection: "row",
-    width: "100%", // Take full width
-    borderRadius: 10,
-    overflow: "hidden", // Ensure squares stay within rounded corners
-    padding: 5,
-    marginBottom: 10,
-  },
-  heatmapSquare: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    margin: 2, // Add some spacing between squares
-    width: 100+'%',
-  },
-  labelText: {
-    fontSize: 10,
-    fontWeight: "bold",
-    color: "white",
-    textAlign: "center",
-  },
-});
+const Heatmap = ({ data }) => {
+  const months = Object.keys(data).sort(); // Triez par date
+
+  return (
+      <View style={{ flexDirection: "row", flexWrap: "wrap", margin: 10 }}>
+          {months.map((month) => (
+              <View
+                  key={month}
+                  style={{
+                      width: "30%",
+                      height: 40,
+                      backgroundColor: getColorForValue(data[month]),
+                      margin: 2,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      borderRadius: 5,
+                  }}
+              >
+                  <Text style={{ color: "#FFF", fontSize: 12 }}>
+                      {month}: {data[month]}
+                  </Text>
+              </View>
+          ))}
+      </View>
+  );
+};
 
 export default Heatmap;

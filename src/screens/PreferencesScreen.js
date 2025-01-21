@@ -6,8 +6,16 @@ import {
   StatusBar,
   SafeAreaView,
   Switch,
-  Linking
+  Linking,
+  FlatList,
 } from "react-native";
+import {
+  VictoryChart,
+  VictoryBar,
+  VictoryAxis,
+  VictoryTheme,
+} from "victory-native";
+
 import { useColorScheme } from "nativewind";
 import Header from "../components/Header";
 import Loading from "../components/Loading";
@@ -20,8 +28,10 @@ import { UserPreferencesContext } from "../../App";
 import styles from "../constants/styles";
 import translations from "../constants/translations"; // Import translations
 
+import { UserHistoryContext } from "../context/UserHistoryContext";
+
 export var themes = [
-  "tech",
+  "technology",
   "sports",
   "politics",
   "health",
@@ -31,6 +41,8 @@ export var themes = [
 ];
 
 export var isTrackingEnabled = true;
+export var isContentFilterEnabled = true;
+
 
 export const countries = [
   { code: "ar", name: "Argentina" },
@@ -112,7 +124,65 @@ const findCodeByName = (name) => {
   return language ? language.code : null;
 };
 
+const getCurrentMonth = () => {
+  const date = new Date(); // Current date and time
+  const month = date.getMonth(); // Returns 0-11 (0 for January, 11 for December)
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+  return monthNames[month]; // Get month name
+};
+
 export default function PreferencesScreen() {
+  const { clickedTopics } = useContext(UserHistoryContext);
+
+
+  // Compter la fréquence des topics cliqués
+  const topicCounts = clickedTopics.reduce((acc, topic) => {
+    acc[topic] = (acc[topic] || 0) + 1;
+    return acc;
+  }, {});
+
+  // Convertir les données pour le graphique
+  const chartData = Object.entries(topicCounts).map(([topic, count]) => ({
+    topic,
+    count,
+  }));
+
+  // Préparer les données
+  const processData = () => {
+    console.log("clickedTopics:", clickedTopics);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const filteredTopics = clickedTopics.filter(
+      (entry) => new Date(entry.timestamp) >= thirtyDaysAgo
+    );
+
+    const topicCounts = filteredTopics.reduce((acc, { topic }) => {
+      acc[topic] = (acc[topic] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(topicCounts).map(([topic, count]) => ({
+      topic,
+      count,
+    }));
+  };
+
+  const data = processData();
+
   const { colorScheme } = useColorScheme();
 
   const {
@@ -124,8 +194,11 @@ export default function PreferencesScreen() {
     setSelectedLanguageCode,
   } = useContext(UserPreferencesContext);
 
+  const { isContentFilterEnabled, setIsContentFilterEnabled } = useContext(UserPreferencesContext);
+
+
   const [currentThemes, setCurrentThemes] = useState(
-    selectedThemes || ["tech", "sports"]
+    selectedThemes || ["technology", "sports"]
   );
   const [currentCountry, setCurrentCountry] = useState(selectedCountry || "en");
   const [currentLanguageCode, setCurrentLanguageCode] = useState(
@@ -133,7 +206,7 @@ export default function PreferencesScreen() {
   );
 
   const [isTrackingEnabled, setIsTrackingEnabled] = useState(true); // Default to true
-
+  
   useEffect(() => {
     setSelectedThemes(currentThemes);
     setSelectedCountry(currentCountry);
@@ -159,6 +232,10 @@ export default function PreferencesScreen() {
     setIsTrackingEnabled((prevState) => !prevState);
   };
 
+  const handleToggleContentFiltering = () => {
+    setIsContentFilterEnabled((prevState) => !prevState);
+  };
+
   const handleSelectCountry = (country) => {
     setCurrentCountry(country);
   };
@@ -178,30 +255,139 @@ export default function PreferencesScreen() {
 
       {/* Tracking preference */}
       <View className="flex-row bg-white rounded-lg">
-  <View className="mx-10 my-10" style={styles.trackingContainer}>
-    <Text style={styles.title}>Enable usage tracking</Text>
-    <Text style={styles.explanationText}>
-      with{' '}
-      <Text
-        style={[styles.explanationText, { color: ColorList.primary, textDecorationLine: 'underline' }]}
-        onPress={() => Linking.openURL('https://aptabase.com/legal/privacy')}
-      >
-        AptaBase Analytics
-      </Text>
+      <View className="mx-10 my-10" style={styles.trackingContainer}>
+          <Text style={styles.title}>Enable usage tracking</Text>
+          <Text style={styles.explanationText}>
+            with{" "}
+            <Text
+              style={[
+                styles.explanationText,
+                { color: ColorList.primary, textDecorationLine: "underline" },
+              ]}
+              onPress={() =>
+                Linking.openURL("https://aptabase.com/legal/privacy")
+              }
+            >
+              AptaBase Analytics
+            </Text>
+          </Text>
+        </View>
+        <View className="mx-10 my-10" style={styles.trackingContainer}>
+          <Switch
+            value={isTrackingEnabled}
+            onValueChange={handleToggleTracking}
+            style={styles.switch}
+          />
+        </View>
+        </View>
+
+
+
+
+      {/* Content Filtering preference */}
+      <View className="flex-row bg-gray rounded-lg">
+        <View className="mx-10 my-10" style={styles.trackingContainer}>
+          <Text style={styles.title}>
+            {" "}
+            {translations[selectedLanguageCode].enableFeedPersonalization}
+          </Text>
+          <Text style={styles.explanationText}>
+            {translations[selectedLanguageCode].didYouKnow}{" "}
+            {translations[selectedLanguageCode].contentFilterExplanation}
+          </Text>
+
+          <Text
+            style={[
+              styles.explanationText,
+              { color: ColorList.primary, textDecorationLine: "underline" },
+            ]}
+            onPress={() => Linking.openURL("https://algepi.com")}
+          >
+            {translations[selectedLanguageCode].learnMore}
+          </Text>
+          <Switch
+            value={isContentFilterEnabled}
+            onValueChange={handleToggleContentFiltering}
+            style={styles.switch}
+          />
+        </View>
+
+      </View>
+
+<View className="mx-10 my-10" style={styles.trackingContainer}>
+  <Text style={styles.title}>{translations[selectedLanguageCode].clickedTopicsTitle}</Text>
+
+  {data.length > 0 ? (
+    <View className="mx-10 my-10" style={styles.trackingContainer}>
+    <Text style={{ fontSize: 16, marginTop: 10 }}>
+      {data.map(({ topic, count }) => `${topic} (${count})`).join(", ")}{" "}
+      {/* Transforme les topics en texte formaté */}
+     {translations[selectedLanguageCode].inText} {getCurrentMonth()}.
     </Text>
-  </View>
-  <View className="mx-10 my-10" style={styles.trackingContainer}>
-    <Switch
-      value={isTrackingEnabled}
-      onValueChange={handleToggleTracking}
-      style={styles.switch}
-    />
-  </View>
+    </View>
+  ) : (
+    <Text style={{ textAlign: "center", marginTop: 20 }}>
+      Aucun historique de topics pour les 30 derniers jours.
+    </Text>
+  )}
 </View>
 
+
+      {/* <View className="mx-10 my-10" style={styles.trackingContainer}>
+        <Text style={styles.title}>Themes history:</Text>
+        {selectedThemes && selectedThemes.length > 0 ? (
+          <View style={styles.themesContainer}>
+            {selectedThemes.map((theme, index) => (
+              <Text key={index} style={styles.themeText}>
+                {theme}
+              </Text>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.container}>
+            <Text style={styles.title}>Topics History:</Text>
+
+            <Text
+              style={{ fontSize: 20, textAlign: "center", marginBottom: 10 }}
+            >
+              Historique des Topics
+            </Text>
+
+            {data.length > 0 ? (
+              <VictoryChart
+                theme={VictoryTheme.material}
+                domainPadding={{ x: 20 }}
+                horizontal
+              >
+                <VictoryAxis
+                  style={{ tickLabels: { fontSize: 10, padding: 5 } }}
+                  dependentAxis
+                />
+                <VictoryAxis
+                  style={{ tickLabels: { fontSize: 12, padding: 5 } }}
+                />
+                <VictoryBar
+                  data={data}
+                  x="topic"
+                  y="count"
+                  style={{
+                    data: { fill: "blue" },
+                  }}
+                />
+              </VictoryChart>
+            ) : (
+              <Text style={{ textAlign: "center", marginTop: 50 }}>
+                Aucun historique de topics pour les 30 derniers jours.
+              </Text>
+            )}
+          </View>
+        )}
+      </View> */}
+
       {/* Other preferences */}
-      <Text className="mx-10 my-8" style={styles.title}>
-        Show news written in:
+
+      <Text className="mx-8 my-8" style={styles.title}>
+        {translations[selectedLanguageCode].languagePreferenceText}
       </Text>
       <View style={styles.pickerContainer}>
         <Picker
