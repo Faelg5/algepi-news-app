@@ -37,7 +37,7 @@ export default function WelcomeScreen() {
             fontFamily: "Helvetica",
           }}
         >
-          FeedSort
+          NewsWise
         </Text>
 
         <Text
@@ -48,10 +48,10 @@ export default function WelcomeScreen() {
             fontWeight: "normal",
           }}
         >
-          FeedSort leverages TF-IDF scoring and Natural Language Processing
-          (NLP) to evaluate the relevance of news articles based on your custom
-          topics. Sort your news by match score and stay informed with content
-          that truly matters to you.
+          NewsWise helps you see through your news feed in a new way.
+          Vary the ranking of your news based on your reading history or topics of interest.
+          Use the AI Lens to get summaries of news articles in a more neutral tone. 
+          Become aware of emotional language in news articles and see how it affects your perception. 
         </Text>
 
         <Text

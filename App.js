@@ -1,8 +1,10 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from "react";
 import AppNavigation from "./src/navigation";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { LogBox } from "react-native";
 import { XaiModeProvider } from "./src/context/XaiModeContext";
+import { UserHistoryProvider } from "./src/context/UserHistoryContext";
+
 import { newsApiKey, aptabaseApiKey } from "./utils/ApiKey";
 
 import Aptabase from "@aptabase/react-native"; // Library for Aptabase, a GDPR-compliant database
@@ -20,7 +22,7 @@ const queryClient = new QueryClient(); // Create a new instance of the query cli
 export const UserPreferencesContext = createContext();
 
 const API_KEY = newsApiKey;
-const API_URL = 'https://newsapi.org/v2/top-headlines';
+const API_URL = "https://newsapi.org/v2/top-headlines";
 
 // async function fetchAvailableCountries() {
 //   try {
@@ -45,8 +47,9 @@ const API_URL = 'https://newsapi.org/v2/top-headlines';
 
 export default function App() {
   const [selectedThemes, setSelectedThemes] = useState([]);
-  const [selectedCountry, setSelectedCountry] = useState('us');
-  const [selectedLanguageCode, setSelectedLanguageCode] = useState('en');
+  const [selectedCountry, setSelectedCountry] = useState("us");
+  const [selectedLanguageCode, setSelectedLanguageCode] = useState("en");
+  const [isContentFilterEnabled, setIsContentFilterEnabled] = useState(false);
 
   // const [availableCountries, setAvailableCountries] = useState([]);
 
@@ -59,12 +62,25 @@ export default function App() {
   // }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <XaiModeProvider>
-        <UserPreferencesContext.Provider value={{ selectedThemes, setSelectedThemes, selectedCountry, setSelectedCountry, selectedLanguageCode, setSelectedLanguageCode}}>
+    <UserHistoryProvider>
+      <QueryClientProvider client={queryClient}>
+        <XaiModeProvider>
+          <UserPreferencesContext.Provider
+            value={{
+              selectedThemes,
+              setSelectedThemes,
+              selectedCountry,
+              setSelectedCountry,
+              selectedLanguageCode,
+              setSelectedLanguageCode,
+              isContentFilterEnabled,
+              setIsContentFilterEnabled,
+            }}
+          >
             <AppNavigation />
-        </UserPreferencesContext.Provider>
-      </XaiModeProvider>
-    </QueryClientProvider>
+          </UserPreferencesContext.Provider>
+        </XaiModeProvider>
+      </QueryClientProvider>
+    </UserHistoryProvider>
   );
 }

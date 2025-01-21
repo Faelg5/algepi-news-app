@@ -16,10 +16,7 @@ import {
   Image,
   Switch,
   Animated,
-  Dimensions,
 } from "react-native";
-import { UserHistoryContext } from "../context/UserHistoryContext";
-
 import { useColorScheme } from "nativewind";
 import { useQuery } from "react-query";
 import {
@@ -50,7 +47,6 @@ import {
   languages,
   themes,
   isTrackingEnabled,
-  isContentFilterEnabled,
 } from "./PreferencesScreen"; // Import countries and languages list
 import { TfIdf } from "../../utils/tfidf"; // Custom TF-IDF class
 import styles from "../constants/styles";
@@ -60,20 +56,12 @@ import { heightPercentageToDP } from "react-native-responsive-screen";
 import translations from "../constants/translations"; // Import translations
 
 import { trackEvent } from "@aptabase/react-native";
+import Svg, { Circle } from "react-native-svg";
 import MagnifyingGlassIcon from "react-native-heroicons/solid/MagnifyingGlassIcon";
 
 import * as FileSystem from "expo-file-system";
 
 import dayjs from "dayjs"; // Assurez-vous que dayjs est installé et importé si nécessaire
-import { get } from "lodash";
-import { all } from "axios";
-
-import Svg, { G, Rect, Text as SvgText } from "react-native-svg";
-import * as d3 from "d3";
-
-import DotGrid from "../../utils/DotGrid";
-
-const topics = ["Technology", "Finance", "Health", "Entertainment", "Sports"];
 
 const CHATGPT_API_URL = "https://api.openai.com/v1/chat/completions";
 
@@ -90,159 +78,6 @@ const getColorForValue = (value) => {
   if (value < 10) return "#00BCD4"; // Bleu foncé
   if (value < 20) return "#00838F"; // Très foncé
   return "#004D40"; // Bleu profond pour de fortes occurrences
-};
-
-const getCountryCode = (countryName) =>
-  countries.find((country) => country.code === countryName)?.name;
-
-const getLanguageName = (languageCode) => {
-  if (!languageCode) {
-    console.error("Language code is missing.");
-    return "Unknown Language";
-  }
-
-  const language = languages?.find((lang) => lang.code === languageCode);
-  if (!language) {
-    console.error(`No language found for code: ${languageCode}`);
-    return "Unknown Language";
-  }
-
-  return language.name;
-};
-
-["log", "warn"].forEach(function (method) {
-  var old = console[method];
-  console[method] = function () {
-    var stack = new Error().stack.split(/\n/);
-    // Chrome includes a single "Error" line, FF doesn't.
-    if (stack[0].indexOf("Error") === 0) {
-      stack = stack.slice(1);
-    }
-    var args = [].slice.apply(arguments).concat([stack[1].trim()]);
-    return old.apply(console, args);
-  };
-});
-
-// this one not used anymore as computes the tfidf score for each article before all have a
-const createSummariesForAll = async (
-  newsData,
-  localSelectedThemes,
-  tfidfInstance
-) => {
-  try {
-    const updatedArticles = await Promise.all(
-      newsData.map(async (article) => {
-        let updatedArticle = { ...article }; // Create a new object
-        try {
-          if (article.summary || article.description) {
-            // Generate summary
-            updatedArticle.themesSummary = await createThemesSummary(
-              article,
-              localSelectedThemes
-            );
-
-            // Calculate TF-IDF score for the article's summary and themes
-            if (updatedArticle.themesSummary) {
-              const tfidfScores = localSelectedThemes.map((theme) =>
-                tfidfInstance.current.tfidf(theme, updatedArticle.themesSummary)
-              );
-
-              // Aggregate TF-IDF scores (e.g., sum or average)
-              updatedArticle.tfidfScore = tfidfScores.reduce(
-                (acc, score) => acc + score,
-                0
-              );
-            } else {
-              updatedArticle.tfidfScore = 0; // Default score if no summary
-            }
-          } else {
-            updatedArticle.themesSummary = "No content available";
-            updatedArticle.tfidfScore = 0; // Default score
-          }
-        } catch (error) {
-          console.error("Error processing article:", article.title, error);
-          updatedArticle.themesSummary = "Summary generation failed";
-          updatedArticle.tfidfScore = 0; // Fallback score
-        }
-        return updatedArticle;
-      })
-    );
-
-    return updatedArticles;
-  } catch (error) {
-    console.error("Error in createThemesSummaries ForAll:", error);
-    throw error;
-  }
-};
-
-const createSummariesAndComputeTfIdf = async (
-  newsData,
-  localSelectedThemes,
-  tfidfInstance
-) => {
-  try {
-    console.log("Starting summaries and TF-IDF computation...");
-
-    // Step 1: Generate summaries for all articles
-    const updatedArticles = await Promise.all(
-      newsData.map(async (article) => {
-        let updatedArticle = { ...article }; // Clone article to avoid mutation
-        try {
-          if (article.summary || article.description) {
-            console.log(`Generating themes summary for: "${article.title}"`);
-            updatedArticle.themesSummary = await createThemesSummary(
-              article,
-              localSelectedThemes
-            );
-
-            if (!updatedArticle.themesSummary) {
-              console.warn(
-                `Themes summary missing for article: "${article.title}"`
-              );
-              updatedArticle.themesSummary = "No content available";
-            }
-          } else {
-            console.warn(`No content available for: "${article.title}"`);
-            updatedArticle.themesSummary = "No content available";
-          }
-        } catch (error) {
-          console.error(
-            `Error generating themes summary for: "${article.title}"`,
-            error
-          );
-          updatedArticle.themesSummary = "Summary generation failed";
-        }
-        return updatedArticle;
-      })
-    );
-
-    console.log("All themes summaries generated:", updatedArticles);
-
-    // Step 2: Compute TF-IDF scores
-    const articlesWithTfIdf = updatedArticles.map((article) => {
-      if (
-        article.themesSummary &&
-        article.themesSummary !== "No content available"
-      ) {
-        const tfidfScores = localSelectedThemes.map((theme) =>
-          tfidfInstance.current.tfidf(theme, article.themesSummary)
-        );
-
-        // Aggregate TF-IDF scores (e.g., sum)
-        article.tfidfScore = tfidfScores.reduce((acc, score) => acc + score, 0);
-      } else {
-        article.tfidfScore = 0; // Default score if no valid summary
-      }
-      return article;
-    });
-
-    console.log("TF-IDF scores computed for articles:", articlesWithTfIdf);
-
-    return articlesWithTfIdf; // Return the final updated list
-  } catch (error) {
-    console.error("Error in createSummariesAndComputeTfIdf:", error);
-    throw error; // Propagate error for higher-level handling
-  }
 };
 
 ////// API Calls Section
@@ -263,11 +98,11 @@ const OpenAIThemeSummaryCall = async (content, currentThemes) => {
       {
         role: "user",
         content:
-          "Your role is to return a list of themes that give an idea about what the text is talking about using only the words from the list I give you. The frequency of terms should reflect how many times this theme is talked about in the text. For example you can return something in this format: politics, sports, health, entertainment, technology, politics, sports, health, entertainment, technology. Add the word more times if you see it appears frequently in the article I give you at the end of the prompt. Select the terms only from the given list, in an objective, neutral and respectful way. Return only a list of words that summarize the themes in the given text, using exclusively the terms listed here: " +
+          "Your role is to return a list of terms that summarize the text using only thirty words from the list I give you. For example you can return something like: politics, sports, health, entertainment, tech,politics, sports, health, entertainment, tech. Add the word more times if you see it appears frequently in the article I give you at the end of the prompt. Select the terms only from the given list, in an objective, neutral and respectful way. Return only a list of words that summarize the themes in the given text, using exclusively the terms listed here: " +
           currentThemes.join(", ") +
-          ". Never include a full sentence or a word differnt than the ones I just mentioned. Separate the terms with commas. Please note: if the document I provide you contains [Removed], please return a only single white space character. Never, ever say another word than one that is here: " +
+          ". Never include a full sentence or another word than one of these specific terms I just mentioned, separated with commas. Please note: if the document I provide you contains [Removed], please return a only single white space character. Never, ever say another word than one that is here: " +
           currentThemes.join(", ") +
-          ". Here is the document for which you must summarize with only the themes I provided you in the format I asked for:" +
+          ". Here is the document to summarize:" +
           content,
       },
     ],
@@ -310,86 +145,14 @@ const OpenAIThemeSummaryCall = async (content, currentThemes) => {
   }
 };
 
-const OpenAINeutralizedSummaryCall = async (
-  content,
-  languageName // Pass selectedLanguageCode as a parameter
-) => {
-  console.log("--------------------------------------");
-  console.log("CALLING OPENAI API TO SUMMARIZE THIS IN A NEUTRAL TONE");
-  console.log("Content:", content);
-
-  if (!languageName) {
-    console.error("Language name could not be resolved.");
-    return "Error: Unknown language.";
-  }
-
-  console.log("Language Name:", languageName);
-
-  // Define the API body with the resolved language name
-  const APIBody = {
-    model: "gpt-3.5-turbo",
-    messages: [
-      {
-        role: "system",
-        content: `
-        You are an expert news summarizer. Your task is to generate concise and unbiased summaries of news articles in ${languageName}.
-        To ensure accuracy and neutrality:
-        
-        1. Focus only on key arguments, facts, and conclusions without interpreting tone, intent, or emotional language.
-        2. Avoid using subjective language or personal opinions. Stick to presenting factual content directly from the source.
-        3. Do not reflect or amplify any biases present in the original text. If the content appears biased, simply present the key points objectively without endorsing the perspective.
-        4. Provide the summary in a bullet-point format to ensure clarity and focus on essential details.
-        5. Include only verifiable claims and avoid speculating on information not present in the original content.`,
-      },
-      {
-        role: "user",
-        content: `Please summarize the following article in ${languageName}: ${content}`,
-      },
-    ],
-    max_tokens: 60,
-    temperature: 0,
-  };
-
-  try {
-    const response = await fetch(CHATGPT_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + openAIApiKey,
-      },
-      body: JSON.stringify(APIBody),
-    });
-
-    if (!response.ok) {
-      throw new Error("Network response was not ok: " + response.statusText);
-    }
-
-    const data = await response.json();
-    console.log("RESPONSE JSON from OpenAI API:", data);
-
-    const summary =
-      data.choices && data.choices.length > 0
-        ? data.choices[0].message.content.trim()
-        : "No summary available";
-
-    console.log("Generated Summary:", summary);
-    return summary;
-  } catch (error) {
-    console.error("Error calling OpenAI API:", error);
-    return "Error calling OpenAI API";
-  }
-};
-
 const generateSummaryWithRetry = async (
   content,
-  languageName,
-  retries = 1, // set to as many retries as necessary
+  currentThemes,
+  retries = 3,
   delay = 1000
 ) => {
-  console.log("LANGUAGE NAME: " + languageName);
-
   for (let attempt = 1; attempt <= retries; attempt++) {
-    const summary = await OpenAINeutralizedSummaryCall(content, languageName);
+    const summary = await OpenAIThemeSummaryCall(content, currentThemes);
     if (
       summary !== "No summary available" &&
       summary !== "Error calling OpenAI API"
@@ -405,171 +168,6 @@ const generateSummaryWithRetry = async (
   return "No summary available"; // Fallback if all attempts fail
 };
 
-const generatePolarityScoreWithRetry = async (
-  content,
-  languageName,
-  retries = 1, // set to as many retries as necessary
-  delay = 1000
-) => {
-  console.log("LANGUAGE NAME: " + languageName);
-
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    const polarityScore = await OpenAIPolarityScoreCall(content, languageName);
-    if (
-      polarityScore !== "No polarity score available" &&
-      polarityScore !== "Error calling OpenAI API"
-    ) {
-      console.log("Polarity score generated successfully!");
-      console.log("Polarity Score:");
-      console.log(polarityScore);
-      return polarityScore;
-    }
-    console.warn(`Attempt ${attempt} failed. Retrying in ${delay}ms...`);
-    await new Promise((resolve) => setTimeout(resolve, delay));
-  }
-  return "No polarity score available"; // Fallback if all attempts fail
-};
-
-const OpenAIPolarityScoreCall = async (
-  content,
-  languageName // Pass selectedLanguageCode as a parameter
-) => {
-  console.log("--------------------------------------");
-  console.log("CALLING OPENAI API TO EVALUATE ITS POLARITY LEVEL");
-  console.log("Content:", content);
-
-  if (!languageName) {
-    console.error("Language name could not be resolved.");
-    return "Error: Unknown language.";
-  }
-
-  console.log("Language Name:", languageName);
-
-  // Define the API body with the resolved language name
-  const APIBody = {
-    model: "gpt-3.5-turbo",
-    messages: [
-      {
-        role: "system",
-        content: `
-        You are an expert in analyzing the polarity of news article titles based on specific writing techniques. Your task is to assign a polarity score on a scale of 0 (neutral) to 5 (highly polarised) to a given title. Use exclusively the following techniques to determine the score:`,
-      },
-      {
-        role: "system",
-        content: `Techniques to Consider
-
-Attention-Grabbing Hooks:
-
-	1.	Startling statistics or facts
-	2.	Shocking statements
-	3.	Questions
-	4.	Anecdotes
-	5.	Vivid descriptions
-
-Emotional Manipulation:
-
-	6.	Hyperbole
-	7.	Personification
-	8.	Emotive language
-	9.	Cliffhangers
-
-Biased Reporting:
-
-	10.	Selective facts
-	11.	Loaded language
-	12.	False equivalence
-
-Creating Anxiety or Urgency:
-
-	13.	Fear-mongering
-	14.	Scarcity tactics
-	15.	Unanswered questions
-
-Misleading Techniques:
-
-	16.	Weasel words
-	17.	False dichotomies
-	18.	Strawman arguments`,
-      },
-      {
-        role: "system",
-        content: `Scoring Rules:
-
-	1.	Assign a polarity score from 0 to 5 based on the number and severity of techniques present:
-	•	0: No techniques detected (neutral).
-	•	1–2: Minimal use of subtle techniques.
-	•	3–4: Moderate use of techniques that evoke strong emotional responses.
-	•	5: Heavy use of highly polarising techniques such as fear-mongering, hyperbole, or loaded language.
-	2.	Evaluate only the listed techniques and avoid considering any external context.
-	3.	If the title uses multiple techniques, weigh their combined effect when assigning the score.
-  
-  Example Input:
-
-Title: “Experts warn: A simple habit could save millions from life-threatening diseases.”
-Example Output:
-4, Fear-mongering, Hyperbole, Loaded language
-  `,
-      },
-      {
-        role: "user",
-        content: `Instructions:
-Here is the title to evaluate: ${content}
-Respond with:
-	1.	The polarity score (0–5).
-  2.	A list of the detected techniques.
-
-Example format:
-Score: 2, Fear-mongering, Hyperbole
-The name of the techniques must be in ${languageName} language. The name of techniques should be in the ${languageName} language:
-`,
-      },
-    ],
-    max_tokens: 60,
-    temperature: 0,
-  };
-
-  try {
-    const response = await fetch(CHATGPT_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + openAIApiKey,
-      },
-      body: JSON.stringify(APIBody),
-    });
-    if (!response.ok) {
-      throw new Error("Network response was not ok: " + response.statusText);
-    }
-
-    const polarityData = await response.json();
-    const polarityContent = polarityData.choices[0]?.message?.content?.trim();
-    console.log("Raw Polarity Content:", polarityContent);
-
-    if (!polarityContent) {
-      throw new Error("Polarity content is empty.");
-    }
-
-    // Attempt to parse the content
-    console.log("Polarity Content to parse:", polarityContent);
-    const match = polarityContent.match(
-      /Score:\s*(\d+)\s*,?\s*([^\n]+)?(?:,?\s*(.*))?/
-    );
-    if (match) {
-      return {
-        score: parseInt(match[1], 10),
-        techniques: match[2].trim(),
-      };
-    } else {
-      throw new Error("Failed to parse polarity content.");
-    }
-  } catch (error) {
-    console.error("Error calling OpenAI API:", error);
-    return null; // Return null to indicate failure
-  }
-};
-
-//////////////////////////////////////////
-
 const sources = [
   { label: "News API", value: "newsApi" },
   { label: "The News API", value: "theNewsApi" },
@@ -577,79 +175,6 @@ const sources = [
 ];
 
 export default function FeedScreen({ navigation }) {
-  console.log("Clicked Topics at component load:", clickedTopics);
-  // For Content Filtering
-  const { addTopicToHistory } = useContext(UserHistoryContext); // Correct import
-  if (!addTopicToHistory) {
-    console.error("UserHistoryContext is undefined. Check provider wrapping.");
-  }
-
-  const { clickedTopics } = useContext(UserHistoryContext);
-
-  console.log("Clicked Topics after context load:", clickedTopics);
-
-  const safeClickedTopics = clickedTopics || [];
-
-  // Mock data if `clickedTopics` is not passed
-  const mockClickedTopics = [
-    "Technology",
-    "Politics",
-    "Technology",
-    "Health",
-    "Politics",
-  ];
-  const topics = clickedTopics || mockClickedTopics;
-
-  // Group clicks by topic and day
-  const processClickedTopics = (topics) => {
-    const grouped = {};
-
-    topics.forEach(({ topic, timestamp }) => {
-      const date = new Date(timestamp).toISOString().split("T")[0]; // Format: YYYY-MM-DD
-      if (!grouped[topic]) grouped[topic] = {};
-      grouped[topic][date] = (grouped[topic][date] || 0) + 1;
-    });
-
-    return grouped;
-  };
-
-  const groupedTopics = processClickedTopics(clickedTopics);
-
-  const { isContentFilterEnabled } = useContext(UserPreferencesContext);
-  useEffect(() => {
-    console.log("Content filter enabled:", isContentFilterEnabled);
-  }, [isContentFilterEnabled]);
-
-  /// DATAVIS SECTION ///////////
-
-  /// CLICKED TOPICS BARCHART
-  // Calculate frequencies
-  const themeFrequencies = calculateThemeFrequencies(topics);
-  const graphThemes = Object.keys(themeFrequencies);
-  const frequencies = Object.values(themeFrequencies);
-
-  // Dimensions for the chart
-  const chartWidth = Dimensions.get("window").width - 40; // Add padding
-  const chartHeight = graphThemes.length * 40; // Dynamic height based on number of themes
-  const margin = { top: 20, right: 20, bottom: 30, left: 100 };
-
-  // X-axis scale
-  const xScale = d3
-    .scaleLinear()
-    .domain([0, d3.max(frequencies)])
-    .range([0, chartWidth - margin.left - margin.right]);
-
-  // Y-axis scale (ordinal for themes)
-  const yScale = d3
-    .scaleBand()
-    .domain(graphThemes)
-    .range([0, chartHeight - margin.top - margin.bottom])
-    .padding(0.1);
-
-  ///////////////
-
-  /// GENERAL CODE FOR NEWS FEED
-
   //for newsCatcher API
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -661,110 +186,43 @@ export default function FeedScreen({ navigation }) {
 
   // To track the expanded XAI section
   const [expandedItem, setExpandedItem] = useState(null);
-
   const handleExpand = async (index) => {
     console.log("INDEX OF EXPANDED ITEM:", index);
 
-    // Toggle expansion
-    setExpandedItem((prevIndex) => (prevIndex === index ? null : index));
+    // Bascule l'élément développé
+    setExpandedItem(expandedItem === index ? null : index);
 
-    const selectedArticle = newsData[index];
-    if (!selectedArticle) {
-      console.error("No article found at index:", index);
-      return;
-    }
+    // Si l'élément est sélectionné pour la première fois
+    if (expandedItem !== index) {
+      const selectedArticle = newsData[index];
 
-    const contentToSummarize =
-      selectedArticle.title && selectedArticle.description
-        ? selectedArticle.title + " " + selectedArticle.description
-        : selectedArticle.title || selectedArticle.description;
+      if (!selectedArticle.aiSummary) {
+        console.log("Generating summary for article:", selectedArticle.title);
 
-    if (!contentToSummarize || !contentToSummarize.trim()) {
-      console.warn("Invalid content for summarization.");
-      return;
-    }
+        // Vérifiez que l'article a un contenu valide
+        const contentToSummarize =
+          selectedArticle.title + " " + selectedArticle.description;
 
-    console.log("Selected Language Code:", selectedLanguageCode);
-    const languageName = getLanguageName(selectedLanguageCode);
-    if (!languageName || !languageName.trim()) {
-      console.error("Invalid language name for summarization.");
-      return;
-    }
+        if (!contentToSummarize.trim()) {
+          console.warn("Article content is empty. Cannot generate summary.");
+          return;
+        }
 
-    console.log("Selected Article Content:", contentToSummarize);
-    console.log("Language Name:", languageName);
+        // Appelez l'API pour générer un résumé
+        const generatedSummary = await generateSummaryWithRetry(
+          contentToSummarize,
+          localSelectedThemes
+        );
 
-    // Generate Summary
-    try {
-      const generatedSummary = await generateSummaryWithRetry(
-        contentToSummarize,
-        languageName
-      );
+        console.log("Generated Summary:", generatedSummary);
 
-      console.log("Generated Summary:", generatedSummary);
-
-      // Update the news article with the summary
-      setNewsData((prevNewsData) =>
-        prevNewsData.map((article, i) =>
-          i === index ? { ...article, aiSummary: generatedSummary } : article
-        )
-      );
-    } catch (error) {
-      console.error("Error generating summary:", error);
-    }
-
-    // Generate Polarity Score
-    try {
-      const polarityParts = await generatePolarityScoreWithRetry(
-        contentToSummarize,
-        languageName
-      );
-      console.log(polarityParts);
-      if (polarityParts) {
-        polarityScore = parseInt(polarityParts.score); // Extract score
-        polarityTechnique = polarityParts.techniques; // Extract technique
-      } else {
-        throw new Error("Invalid polarity format");
+        // Mettez à jour `newsData` avec le résumé
+        setNewsData((prevNewsData) =>
+          prevNewsData.map((article, i) =>
+            i === index ? { ...article, aiSummary: generatedSummary } : article
+          )
+        );
       }
-    } catch (error) {
-      console.error("Error parsing polarity content:", error);
-      polarityScore = " - ";
-      polarityTechnique = " - ";
-    }
-
-    // Update the news article with the polarity score
-    setNewsData((prevNewsData) =>
-      prevNewsData.map((article, i) =>
-        i === index ? { ...article, polarityScore, polarityTechnique } : article
-      )
-    );
-  };
-
-  const handleComputeAllPolarity = async () => {
-    try {
-      console.log("Computing polarity for all articles...");
-
-      const updatedArticles = await Promise.all(
-        articles.map(async (article) => {
-          if (!article.content) return article; // Skip articles without content
-
-          // Call the function to evaluate the polarity
-          const polarityScore = await evaluatePolarityLevel(article.content);
-
-          // Return the updated article
-          return {
-            ...article,
-            polarityScore, // Add polarity score to the article object
-          };
-        })
-      );
-
-      // Update the articles state with the new polarity scores
-      setArticles(updatedArticles);
-
-      console.log("Polarity scores computed for all articles!");
-    } catch (error) {
-      console.error("Error computing polarity for articles:", error);
     }
   };
 
@@ -806,9 +264,8 @@ export default function FeedScreen({ navigation }) {
   const [showSummaries, setShowSummaries] = useState(false);
 
   const [activeTheme, setActiveTheme] = useState();
-  const [localSelectedThemes, setLocalSelectedThemes] = useState(
-    selectedThemes || [] // Utiliser un tableau vide par défaut si selectedThemes est undefined
-  );
+  const [localSelectedThemes, setLocalSelectedThemes] =
+    useState(selectedThemes);
   const [andOperator, setAndOperator] = useState(false);
   const [sortByMatch, setSortByMatch] = useState(false);
 
@@ -837,23 +294,14 @@ export default function FeedScreen({ navigation }) {
     setNewsWithSentiments(analyzedNews);
   };
 
+  const getCountryCode = (countryName) =>
+    countries.find((country) => country.code === countryName)?.name;
+
+  const getLanguageName = (languageCode) =>
+    languages.find((language) => language.code === languageCode)?.name;
   var currentCountryName;
-  var currentLanguageName;
 
   const fetchNews = async (calledFrom) => {
-    let queryOperator = andOperator ? " AND " : " OR ";
-
-    // Vérification de `localSelectedThemes`
-    if (
-      !Array.isArray(localSelectedThemes) ||
-      localSelectedThemes.length === 0
-    ) {
-      console.warn("No themes selected. Cannot fetch news.");
-      setNewsData([]); // Réinitialise les données
-      setIsLoading(false);
-      return;
-    }
-
     // Reset the tfidf instance at the beginning of fetching news process
     tfidf.current = new TfIdf();
 
@@ -868,7 +316,6 @@ export default function FeedScreen({ navigation }) {
 
     let response;
     console.log("using source: " + source);
-
     if (source === "newsApi") {
       let queryOperator = " OR ";
       if (andOperator) {
@@ -886,6 +333,7 @@ export default function FeedScreen({ navigation }) {
     console.log("Fetching news from " + source + "...");
 
     currentCountryName = getCountryCode(selectedCountry);
+    console.log("Current language Name: " + selectedLanguageCode);
 
     console.log("Source: " + source);
 
@@ -940,7 +388,7 @@ export default function FeedScreen({ navigation }) {
 
       // summarizeThemesInArticles(articles.slice(0, 3));
 
-      console.log("Language CODE: " + selectedLanguageCode);
+      console.log("Language: " + selectedLanguageCode);
 
       // console.log("full response is above ");
       console.log("Country: " + selectedCountry);
@@ -1031,57 +479,48 @@ export default function FeedScreen({ navigation }) {
     };
   };
 
-  createThemesSummary = async (article, localSelectedThemes) => {
-    console.log("executing createThemesSummary on article: ");
+  createSummary = async (article) => {
+    console.log("executing createSummary on article: ");
     console.log(article.title);
     console.log("selected themes");
     console.log(localSelectedThemes);
 
     console.log("adding article: ");
-    console.log(article);
+    // console.log(article);
 
     if (article.summary) {
       // Ensure Summary is resolved (only for NEWSCATCHER API AND NEWSAPI - old code here)
       // --------------------------------
-      console.log("MAKING AI THEMES SUMMARY CALL");
-      if (source == "newsCatcherApi") {
-        article.themesSummary = await OpenAIThemeSummaryCall(
-          article.title + " " + article.summary,
-          localSelectedThemes
-        );
+      // The News API
+      if (source === "theNewsApi") {
+        article.aiSummary = await OpenAIThemeSummaryCall(article.description);
       }
-      // // The News API
-      // else if (source === "theNewsApi") {
-      //   article.aiSummary = await OpenAIThemeSummaryCall(article.description);
-      // }
-      // // --------------------------------
-      // // News API
-      // else if (source === "newsApi") {
-      //   console.log("ARTICLE CONTENT TO SUMMARIZE NOW:");
-      //   console.log(article.title + article.description);
-      //   if (article.description !== null) {
-      //     console.log("-----------------");
-      //     console.log("SUMMARIZING ARTICLE");
-      //     console.log("-----------------");
+      // --------------------------------
+      // News API
+      else if (source === "newsApi") {
+        console.log("ARTICLE CONTENT TO SUMMARIZE NOW:");
+        console.log(article.title + article.description);
+        if (article.description !== null) {
+          console.log("-----------------");
+          console.log("SUMMARIZING ARTICLE");
+          console.log("-----------------");
 
-      //     article.aiSummary = await generateSummaryWithRetry(
-      //       article.title + " " + article.description,
-      //       localSelectedThemes
-      //     );
-      //   } else {
-      //     article.aiSummary = ""; // default summary is an empty string
-      //   }
-      // }
+          article.aiSummary = await generateSummaryWithRetry(
+            article.title + " " + article.description,
+            localSelectedThemes
+          );
+        } else {
+          article.aiSummary = ""; // default summary is an empty string
+        }
+      }
 
-      console.log(
-        "type of article.themesSummary: " + typeof article.themesSummary
-      );
-      console.log("content of article.themesSummary: " + article.themesSummary);
+      console.log("type of article.aiSummary: " + typeof article.aiSummary);
+      console.log("content of article.aiSummary: " + article.aiSummary);
 
-      if (typeof article.themesSummary === undefined) {
+      if (typeof article.aiSummary === undefined) {
         console.log("-----------------");
-        console.log("Themes summary generation failed!");
-        article.themesSummary = "default summary"; // Provide a fallback summary
+        console.log("Summary generation failed!");
+        article.aiSummary = "default summary"; // Provide a fallback summary
       } else {
         // Iterate over displayedNews and ensure aiSummary is correctly processed
         // newsData.forEach((article) => {
@@ -1109,12 +548,12 @@ export default function FeedScreen({ navigation }) {
         // tfidf.current.addDocument(article.aiSummary);
 
         // add article summary to current article
-        tfidf.current.addDocument(article.themesSummary);
+        tfidf.current.addDocument(article.aiSummary);
 
         console.log("-------- ADDING Article TO TFIDF -----------");
         console.log("Article");
-        console.log(article.themesSummary);
-        console.log("Total documents: " + tfidf.current.length);
+        console.log(article.aiSummary);
+        console.log("Total documents: " + tfidf.current.documents);
       }
     } else {
       console.log("No content to summarize");
@@ -1156,7 +595,7 @@ export default function FeedScreen({ navigation }) {
         let currentPage = 1;
         let fetchedArticles = [];
         let hasMorePages = true;
-        console.log("current language Code: " + currentLanguageCode);
+
         while (
           hasMorePages &&
           (storeToFile
@@ -1164,11 +603,10 @@ export default function FeedScreen({ navigation }) {
             : currentPage === 1)
         ) {
           const response = await fetchNCA(
-            localSelectedThemes.join(queryOperator), // Recherche par mots-clés
+            localSelectedThemes.join(" OR "), // Recherche par mots-clés
             [],
             from, // Date de début
             currentPage,
-            currentLanguageCode,
             { to, page_size: storeToFile ? 10 : articlesPerMonth } // Taille adaptée au mode
           );
 
@@ -1205,7 +643,6 @@ export default function FeedScreen({ navigation }) {
 
         // Ajouter les articles récupérés pour ce mois au tableau global
         allNewsData = allNewsData.concat(fetchedArticles);
-        fetchedNewsData = allNewsData;
 
         console.log(
           `Fetched ${fetchedArticles.length} articles for ${from} to ${to}.`
@@ -1338,48 +775,52 @@ export default function FeedScreen({ navigation }) {
     console.log("selected themes:::: " + localSelectedThemes);
 
     // Appel de l'API NewsCatcher avec les thèmes sélectionnés
-    console.log("QUERY OPERATOR: " + queryOperator);
+
     // query string: topics, sources, from date
-    // fetchNCA(
-    //   localSelectedThemes.join(queryOperator),
-    //   [],
-    //   FROM_DATE,
-    //   1,
-    //   currentLanguageCode
-    // )
-    // Envoie les thèmes comme une requête combinée avec "OR" ou "AND" selon le choix fait par l'utilisateur
-    // .then((fetchedNewsData) => {
-    // console.log("fetched news data:", fetchedNewsData);
+    fetchNCA(localSelectedThemes.join(queryOperator), [], FROM_DATE) // Envoie les thèmes comme une requête combinée avec "OR" ou "AND" selon le choix fait par l'utilisateur
+      .then((fetchedNewsData) => {
+        // console.log("fetched news data:", fetchedNewsData);
 
-    // setNewsData(fetchedNewsData); // Utilise les données récupérées pour le state newsData
-    // setUnsortedNewsData(fetchedNewsData); // Garde une copie non triée
+        setNewsData(fetchedNewsData); // Utilise les données récupérées pour le state newsData
+        setUnsortedNewsData(fetchedNewsData); // Garde une copie non triée
 
-    processNewsData("localSelectedThemes useEffect")
-      .then(() => {
-        // console.log(articles);
+        processNewsData("localSelectedThemes useEffect")
+          .then(() => {
+            // console.log(articles);
 
-        // Sorting
-        if (sortByMatch) {
-          console.log("Sorting by match");
+            // Sorting
+            if (sortByMatch) {
+              console.log("Sorting by match");
 
-          handleSortByMatch();
-        } else {
-          console.log("Keeping the default sort order (localSelectedThemes)");
+              // Sauvegarde `newsData` dans `unsortedNewsData` si ce n'est pas déjà fait
+              if (unsortedNewsData.length === 0) {
+                setUnsortedNewsData([...newsData]);
+              }
 
-          // Réinitialise les données à l'ordre non trié
-          if (unsortedNewsData.length > 0) {
-            setNewsData([...unsortedNewsData]);
-          }
-        }
+              // Trie et met à jour `newsData`
+              const sortedNewsData = [...newsData].sort(
+                (a, b) => b.tfidfScore - a.tfidfScore
+              );
+              setNewsData(sortedNewsData);
+            } else {
+              console.log(
+                "Resetting to default sort order (localSelectedThemes)"
+              );
+
+              // Réinitialise les données à l'ordre non trié
+              if (unsortedNewsData.length > 0) {
+                setNewsData([...unsortedNewsData]);
+              }
+            }
+          })
+          .catch((error) => console.log("Error in processNewsData:", error));
       })
-      .catch((error) => console.log("Error in processNewsData:", error));
-    // })
-    // .catch((error) => console.log("Fetch NewsCatcher news error:", error));
+      .catch((error) => console.log("Fetch NewsCatcher news error:", error));
   }, [localSelectedThemes]);
 
   useEffect(() => {
-    console.log("NEWS DATA: ");
-    console.log(newsData);
+    // console.log("NEWS DATA: ");
+    // console.log(newsData)
   }, [newsData]);
 
   useEffect(() => {
@@ -1413,57 +854,6 @@ export default function FeedScreen({ navigation }) {
   // }, [andOperator]);
 
   useEffect(() => {
-    console.log("selected themes:::: " + localSelectedThemes);
-    if (andOperator) {
-      queryOperator = " AND ";
-    } else {
-      queryOperator = " OR ";
-    }
-    fetchNCA(
-      localSelectedThemes.join(queryOperator),
-      [],
-      FROM_DATE,
-      1,
-      currentLanguageCode
-    ) // Envoie les thèmes comme une requête combinée avec "OR" ou "AND" selon le choix fait par l'utilisateur
-      .then((fetchedNewsData) => {
-        console.log("fetched news data after switch toggle: ");
-        console.log(fetchedNewsData);
-        console.log(fetchedNewsData.length);
-        setNewsData(fetchedNewsData);
-        setUnsortedNewsData(fetchedNewsData);
-
-        processNewsData("andOperator useEffect")
-          .then(() => {
-            if (sortByMatch) {
-              console.log("Sorting by match");
-              // Save the current newsData to unsortedNewsData if it's not already saved
-              if (unsortedNewsData.length === 0) {
-                setUnsortedNewsData([...newsData]);
-              }
-
-              // Sort and update newsData
-              const sortedNewsData = [...newsData].sort(
-                (a, b) => b.tfidfScore - a.tfidfScore
-              );
-              setNewsData(sortedNewsData);
-            } else {
-              console.log(
-                "Resetting to default sort order (toggleAndOperator)"
-              );
-
-              // // Reset to the original unsorted data
-              // if (unsortedNewsData.length > 0) {
-              //   setNewsData([...unsortedNewsData]);
-              // }
-            }
-          })
-          .catch((error) => console.log("error: " + error));
-      })
-      .catch((error) => console.log("Fetch news error: " + error));
-  }, [andOperator]);
-
-  useEffect(() => {
     if (!hasMounted.current) {
       // This will run only on the initial render
       hasMounted.current = true;
@@ -1472,7 +862,16 @@ export default function FeedScreen({ navigation }) {
 
     if (sortByMatch) {
       console.log("Sorting by match");
-      handleSortByMatch();
+      // Save the current newsData to unsortedNewsData if it's not already saved
+      if (unsortedNewsData.length === 0) {
+        setUnsortedNewsData([...newsData]);
+      }
+
+      // Sort and update newsData
+      const sortedNewsData = [...newsData].sort(
+        (a, b) => b.tfidfScore - a.tfidfScore
+      );
+      setNewsData(sortedNewsData);
     } else {
       console.log("Resetting to default sort order (sortByMatch)");
 
@@ -1496,25 +895,6 @@ export default function FeedScreen({ navigation }) {
     }
   }, [source]);
 
-  // RERANK WHEN A CHANGE IS DONE ON ONE OF THESE VARIABLES
-
-  useEffect(() => {
-    if (
-      isContentFilterEnabled &&
-      Array.isArray(clickedTopics) &&
-      clickedTopics.length > 0
-    ) {
-      const reRankedNews = reRankArticles(newsData, clickedTopics);
-      setNewsData(reRankedNews);
-
-      // Affiche l'alert box avec les scores
-      showAlertWithScores(reRankedNews);
-    } else {
-      setNewsData(unsortedNewsData); // Retourne à l'ordre original si désactivé
-    }
-  }, [isContentFilterEnabled, clickedTopics]);
-
-  // Triggered when ShowSummaries is toggled
   useEffect(() => {
     if (!hasMounted.current) {
       // This will run only on the initial render
@@ -1534,69 +914,12 @@ export default function FeedScreen({ navigation }) {
     SpaceGroteskBold: require("../fonts/SpaceGrotesk-Bold.ttf"),
   });
 
-  // when fonts change or font error occurs
   useEffect(() => {
     console.log("Fonts loaded:", fontsLoaded);
     if (fontError) {
       console.error("Font loading error:", fontError);
     }
   }, [fontsLoaded, fontError]);
-
-  useEffect(() => {
-    console.log("ClickedTopics changed:", clickedTopics);
-  }, [clickedTopics]);
-
-  useEffect(() => {
-    console.log("GroupedTopics changed:", groupedTopics);
-  }, [groupedTopics]);
-
-  ///// CONTENT FILTER CODE    /////////
-
-  /// FUNCTION TO COMPUTE A SCORE BASED ON CLICKED THEMES
-  const calculateRelevanceScore = (article, clickedTopics) => {
-    const title = article.title.toLowerCase();
-    const content = (article.description || "").toLowerCase();
-
-    const topicEngagementScore = clickedTopics.reduce(
-      (score, { topic, count }) => {
-        const frequency =
-          (title.match(new RegExp(topic, "gi")) || []).length +
-          (content.match(new RegExp(topic, "gi")) || []).length;
-        console.log(
-          `Topic: ${topic}, Frequency: ${frequency}, Click Count: ${count}`
-        );
-        return score + frequency * count; // Weight by click count
-      },
-      0
-    );
-
-    console.log(`Final Score for "${article.title}": ${topicEngagementScore}`);
-    return topicEngagementScore;
-  };
-
-  // Fonction pour calculer le score d'importance des articles
-  const reRankArticles = (articles, clickedTopics) => {
-    return articles
-      .map((article) => {
-        const topicEngagementScore = calculateRelevanceScore(
-          article,
-          clickedTopics
-        );
-        console.log(
-          `Article: "${article.title}", Score: ${topicEngagementScore}`
-        );
-        return { ...article, topicEngagementScore: topicEngagementScore }; // Attach score
-      })
-      .sort((a, b) => b.topicEngagementScore - a.topicEngagementScore); // Sort by descending score
-  };
-
-  const showAlertWithScores = (articles) => {
-    // const topicEngagementScores = articles.map(
-    //   (article) =>
-    //     `Title: ${article.title}\nScore: ${article.topicEngagementScore}`
-    // );
-    // alert(`News Scores:\n\n${topicEngagementScores.join("\n\n")}`);
-  };
 
   // useEffect(() => {
 
@@ -1640,60 +963,19 @@ export default function FeedScreen({ navigation }) {
     setCurrentCountry(country);
   };
 
-  const handleSortByMatch = async () => {
-    if (unsortedNewsData.length === 0) {
-      setUnsortedNewsData([...newsData]);
-    }
-
-    try {
-      // Generate summaries and get updated articles
-      const updatedNewsData = await createSummariesAndComputeTfIdf(
-        newsData,
-        localSelectedThemes,
-        tfidf
-      );
-      setNewsData(updatedNewsData);
-      // Log after summaries are added
-      console.log("Summaries added to articles:", updatedNewsData);
-
-      // Sort the data by tfidfScore
-      const sortedNewsData = [...updatedNewsData].sort(
-        (a, b) => (b.tfidfScore || 0) - (a.tfidfScore || 0)
-      );
-
-      console.log("Sorted News Data:", sortedNewsData);
-
-      // Update the state with sorted data
-      setNewsData(sortedNewsData);
-    } catch (error) {
-      console.error("Error during sorting by match:", error);
-    }
-  };
-
   const changeTheme = (theme) => {
     console.log("Changing theme:", theme);
     setActiveTheme(theme); // Triggers the useEffect to update currentTheme
     toggleTheme(theme);
   };
 
-  // NEWS ITEMS HANDLER
   const handleNewsDetailsClick = (item) => {
     if (isTrackingEnabled) {
       incrementNewsItemClick();
     }
-
-    console.log("Content filter enabled:", isContentFilterEnabled);
-    if (isContentFilterEnabled) {
-      console.log("Adding topic to history:", item.topic);
-      addTopicToHistory(item.topic);
-    }
-    console.log("clicked on item: " + item.link);
     navigation.navigate("NewsDetails", { item });
   };
 
-  /////////// FEED HANDLERS
-
-  // THEME HANDLER
   const toggleTheme = (theme) => {
     console.log("Toggling theme:", theme);
 
@@ -1723,8 +1005,43 @@ export default function FeedScreen({ navigation }) {
   };
 
   const toggleAndOperator = () => {
-    setAndOperator((prev) => !prev); // set operator to "and" if it was "or" and vice versa
-    console.log("AND Operator toggled. Current themes:", localSelectedThemes);
+    setAndOperator((prev) => !prev);
+    console.log("selected themes:::: " + localSelectedThemes);
+    fetchNews("localselectedthemess changed")
+      .then((fetchedNewsData) => {
+        console.log("fetched news data: ");
+
+        setNewsData(fetchedNewsData);
+        setUnsortedNewsData(fetchedNewsData);
+
+        processNewsData("localSelectedThemes useEffect")
+          .then(() => {
+            if (sortByMatch) {
+              console.log("Sorting by match");
+              // Save the current newsData to unsortedNewsData if it's not already saved
+              if (unsortedNewsData.length === 0) {
+                setUnsortedNewsData([...newsData]);
+              }
+
+              // Sort and update newsData
+              const sortedNewsData = [...newsData].sort(
+                (a, b) => b.tfidfScore - a.tfidfScore
+              );
+              setNewsData(sortedNewsData);
+            } else {
+              console.log(
+                "Resetting to default sort order (toggleAndOperator)"
+              );
+
+              // Reset to the original unsorted data
+              if (unsortedNewsData.length > 0) {
+                setNewsData([...unsortedNewsData]);
+              }
+            }
+          })
+          .catch((error) => console.log("error: " + error));
+      })
+      .catch((error) => console.log("Fetch news error: " + error));
   };
 
   const toggleSortByMatch = () => {
@@ -1837,8 +1154,8 @@ export default function FeedScreen({ navigation }) {
         {translations[selectedLanguageCode].articlesIn}{" "}
         {getLanguageName(selectedLanguageCode)}{" "}
         {translations[selectedLanguageCode].sinceWhen}
-        {FROM_DATE}
-        {/* {translations[selectedLanguageCode].timeUnit} */}.
+        {365 * FROM_DATE}
+        {translations[selectedLanguageCode].timeUnit}.
       </Text>
 
       {selectedThemes.length > 0 && Object.keys(monthlyData).length > 0 && (
@@ -1892,7 +1209,7 @@ export default function FeedScreen({ navigation }) {
 
       {isLoading ? (
         localSelectedThemes.length === 0 ? (
-          <View className="flex-col my-2 mx-4">
+          <View className="flex-col my-4 mx-4">
             <Text className="my-0 mx-2 " style={styles.subTitle}>
               {/* <Text className="my-2 mx-2 " style={styles.noPreferencesText}> */}
               {translations[selectedLanguageCode].noThemesSelected}
@@ -1940,14 +1257,6 @@ export default function FeedScreen({ navigation }) {
                 onChange={toggleSortByMatch}
               />
             </View>
-            <TouchableOpacity
-              style={styles.computeButton}
-              onPress={handleComputeAllPolarity}
-            >
-              <Text style={styles.computeButtonText}>
-                Compute Opinion Levels
-              </Text>
-            </TouchableOpacity>
           </View>
           {Array.isArray(newsData) && newsData.length > 0 ? (
             // console.log("LOG NEWS DATA::", JSON.stringify(newsData, null, 2)),
@@ -1980,12 +1289,6 @@ export default function FeedScreen({ navigation }) {
                       )}
                       <View className="w-[70%] pl-4 justify-center space-y-1">
                         <Text className="text-xs font-bold text-gray-900 dark:text-neutral-300">
-                          {article.topicEngagementScore
-                            ? article.topicEngagementScore
-                            : "-"}
-                          {article.tfidfScore ? article.tfidfScore : "/"}
-                        </Text>
-                        <Text className="text-xs font-bold text-gray-900 dark:text-neutral-300">
                           {article?.clean_url.length > 20
                             ? article.clean_url.slice(0, 20) + "..."
                             : article.clean_url}
@@ -2001,13 +1304,13 @@ export default function FeedScreen({ navigation }) {
                             {showSummaries
                               ? article.aiSummary
                               : article?.title?.length > 80
-                              ? article?.title.slice(0, 150) + "..."
+                              ? article?.title.slice(0, 80) + "..."
                               : article?.title}
                           </Text>
                         )}
                         {article.is_opinion && (
                           <Text className="text-xs text-blue-500 dark:text-blue-400">
-                            Opinion (rated by AI (NewsCatcher))
+                            Opinion (as rated by NCA)
                           </Text>
                         )}
                         <Text className="text-xs text-gray-700 dark:text-neutral-400">
@@ -2017,27 +1320,10 @@ export default function FeedScreen({ navigation }) {
                           )}
                         </Text>
                         <Text style={{ fontSize: 12, color: "#333" }}>
-                          {article.polarizingTechniques}
-                          {
-                            translations[selectedLanguageCode]
-                              .polarizingTechniques
-                          }
-                          {article.polarityScore &&
-                          article.polarityScore !== " " ? (
-                            <Text style={{ fontSize: 12, color: "#333" }}>
-                              {"🧲".repeat(article.polarityScore)}
-                            </Text>
-                          ) : (
-                            <Text style={{ fontSize: 12, color: "#333" }}>
-                              {" "}
-                            </Text>
-                          )}
-                        </Text>
-                        {/* <Text style={{ fontSize: 12, color: "#333" }}>
                           {article.is_opinion
                             ? "Contains opinion"
                             : "Not rated as opinion"}
-                        </Text> */}
+                        </Text>
                       </View>
                       {/* Expandable Section */}
                       <View
@@ -2068,169 +1354,15 @@ export default function FeedScreen({ navigation }) {
                     {/* Expanded Content */}
                     {expandedItem === index && (
                       <View style={styles.expandableContent}>
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            color: "#555",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          {translations[selectedLanguageCode].summary}
-                          <Text
-                            style={{
-                              fontSize: 12,
-                              color: "#555",
-                              fontWeight: "normal",
-                            }}
-                          >
-                            {" "}
-                            {
-                              translations[selectedLanguageCode].summaryTitle
-                            }: {article.aiSummary || "..."}
-                          </Text>{" "}
-                          {"\n"}
+                        <Text style={{ fontSize: 12, color: "#555" }}>
+                          {translations[selectedLanguageCode].summary}:{" "}
+                          {article.aiSummary || "No summary available"}
                         </Text>
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            color: "#555",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          {/* {translations[selectedLanguageCode].polarizingTechniques}:{" "} */}
-                          🧲{" "}
-                          {
-                            translations[selectedLanguageCode]
-                              .polarizingTechniques
-                          }
-                          {article.polarityTechnique || "..."}
-                          {console.log(article.polarityScore)}{" "}
-                          <Text
-                            style={{
-                              fontSize: 12,
-                              color: "#555",
-                              fontWeight: "normal",
-                            }}
-                          ></Text>
-                          {"\n"}
-                          <Text
-                            style={{
-                              fontSize: 12,
-                              color: "#555",
-                              fontWeight: "normal",
-                            }}
-                          >
-                            {translations[selectedLanguageCode].whatIsThis}
-                          </Text>
-                          {/* GPT Opinion: {article.chatgpt_opinion ? "Yes" : "No"} */}
+                        <Text style={{ fontSize: 12, color: "#555" }}>
+                          GPT Opinion: {article.chatgpt_opinion ? "Yes" : "No"}
                         </Text>
                       </View>
                     )}
-
-                    <View
-                      className="my-1"
-                      style={[styles.container, { flex: 0.1 }]}
-                    >
-                      {console.log("THE CLICKED TOPICS:", clickedTopics)}
-                      {console.log("THE GROUPED TOPICS:", groupedTopics)}
-                      <View className="flex-col my-4 mx-4">
-                        <Text className="my-2 mx-2 " style={styles.subTitle}>
-                          {translations[selectedLanguageCode].clickedTopics}
-                        </Text>
-                      </View>
-                      {!safeClickedTopics.length > 0 ? (
-                        <View
-                          style={{
-                            flex: 0.2,
-                            justifyContent: "left",
-                            alignItems: "center",
-                          }}
-                        >
-                          <Text style={{ textAlign: "left", marginTop: 1 }}>
-                            Nothing to see here yet. Start reading!
-                          </Text>
-                        </View>
-                      ) : (
-                        <ScrollView
-                          style={{
-                            flex: 0.1, // Take up all available space
-                            position: "relative",
-                          }}
-                          contentContainerStyle={{ paddingBottom: 1 }} // Add padding for smooth scrolling
-                        >
-                          <View style={{ paddingHorizontal: 10 }}>
-                            {Object.keys(groupedTopics).map((topic) => {
-                              if (topic == article.topic) {
-                                // Determine the range of dates to visualize
-                                // Get dynamic start and end dates for the current month
-                                const startDate = new Date();
-                                startDate.setDate(1); // First day of the current month
-                                startDate.setHours(0, 0, 0, 0);
-
-                                const endDate = new Date();
-                                endDate.setMonth(endDate.getMonth() + 1); // Move to next month
-                                endDate.setDate(0); // Last day of the current month
-                                endDate.setHours(23, 59, 59, 999);
-                                const dateRange = [];
-                                for (
-                                  let d = new Date(startDate);
-                                  d <= endDate;
-                                  d.setDate(d.getDate() + 1)
-                                ) {
-                                  dateRange.push(d.toISOString().split("T")[0]);
-                                }
-
-                                return (
-                                  <View key={topic} style={{ marginBottom: 3 }}>
-                                    <Text
-                                      style={{
-                                        textAlign: "center",
-                                        fontSize: 16,
-                                        marginVertical: 2,
-                                      }}
-                                    >
-                                      When you read about{" "}
-                                      <Text
-                                        style={{
-                                          marginBottom: 5,
-                                          textAlign: "center",
-                                          fontWeight: "bold",
-                                        }}
-                                      >
-                                        {topic}
-                                      </Text>{" "}
-                                      in {getCurrentMonth()}:
-                                    </Text>
-                                    <Svg
-                                      height="40"
-                                      width={dateRange.length * 10}
-                                      style={{ alignSelf: "center" }}
-                                    >
-                                      {dateRange.map((date, index) => {
-                                        const isClicked =
-                                          groupedTopics[topic][date]; // Check if this topic was clicked on this date
-                                        return (
-                                          <Rect
-                                            key={`${topic}-${date}`}
-                                            x={index * 10} // Space between squares
-                                            y={10} // Center vertically
-                                            width={10}
-                                            height={10}
-                                            fill={isClicked ? "black" : "white"}
-                                            stroke="gray" // Add a border for better visibility
-                                            strokeWidth={1}
-                                          />
-                                        );
-                                      })}
-                                    </Svg>
-                                  </View>
-                                );
-                              }
-                            })}
-                          </View>
-                        </ScrollView>
-                      )}
-                    </View>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -2243,7 +1375,7 @@ export default function FeedScreen({ navigation }) {
                   className="text-m text-gray-700 dark:text-neutral-400"
                   style={{ textAlign: "center" }}
                 >
-                  {translations[selectedLanguageCode].loadingNewsFeed}
+                  Loading news feed and analyzing feed relevance...{" "}
                 </Text>
               </View>
             </>
@@ -2379,35 +1511,3 @@ const feedStyles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-
-// Helper function to calculate frequencies
-const calculateThemeFrequencies = (clickedTopics) => {
-  console.log("Clicked Topics:", clickedTopics);
-
-  const frequencies = {};
-  clickedTopics.forEach((topic) => {
-    frequencies[topic] = (frequencies[topic] || 0) + 1;
-  });
-  console.log("Frequencies:", frequencies);
-  return frequencies;
-};
-
-const getCurrentMonth = () => {
-  const date = new Date(); // Current date and time
-  const month = date.getMonth(); // Returns 0-11 (0 for January, 11 for December)
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-  return monthNames[month]; // Get month name
-};

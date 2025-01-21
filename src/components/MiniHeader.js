@@ -11,7 +11,7 @@ export default function MiniHeader({ label, explanation, includeVis, fillColor }
     setShowExplanation(!showExplanation);
   };
 
-  console.log(fillColor)
+  // console.log(fillColor)
 
   return (
     <View style={styles.headerContainer}>

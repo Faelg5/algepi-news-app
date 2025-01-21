@@ -36,9 +36,9 @@ export default function NewsDetailsScreen() {
             <ChevronLeftIcon size={25} color="gray" strokeWidth={3} />
           </TouchableOpacity>
         </View>
-        <View className="space-x-3 rounded-full items-center justify-center flex-row">
-          {/* <Text>NewsDetailsScreen</Text> */}
-
+        <View className="space-x-3 my-5 rounded-full items-center justify-center flex-row">
+          <Text>Topic:{ item.item.topic }</Text> 
+          
           <TouchableOpacity className="bg-gray-100 p-2 rounded-full">
             <ShareIcon size={25} color="gray" strokeWidth={3} />
           </TouchableOpacity>
@@ -53,7 +53,7 @@ export default function NewsDetailsScreen() {
       <View>
 
         {visible && (
-          console.log(item.item.url),
+          console.log(item.item.link),
           <ActivityIndicator
             size={"large"}
             color={"green"}
@@ -68,7 +68,7 @@ export default function NewsDetailsScreen() {
 
               {/* WebView */}
               <WebView
-          source={{ uri: item.item.url }}
+          source={{ uri: item.item.link }}
           onLoadStart={() => setVisible(true)}
           onLoadEnd={() => setVisible(false)}
           onError={() => setLoading(false)} // Handle load errors
