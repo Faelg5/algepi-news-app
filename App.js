@@ -50,7 +50,9 @@ export default function App() {
   const [selectedCountry, setSelectedCountry] = useState("us");
   const [selectedLanguageCode, setSelectedLanguageCode] = useState("en");
   const [isContentFilterEnabled, setIsContentFilterEnabled] = useState(false);
-
+  const [userControlEnabled, setUserControlEnabled] = useState(false);
+  const [transparencyEnabled, setIsTransparencyEnabled] = useState(false);
+  const [isSurveyModeEnabled, setIsSurveyModeEnabled] = useState(false);
   // const [availableCountries, setAvailableCountries] = useState([]);
 
   // useEffect(() => {
@@ -75,6 +77,12 @@ export default function App() {
               setSelectedLanguageCode,
               isContentFilterEnabled,
               setIsContentFilterEnabled,
+              userControlEnabled,
+              setUserControlEnabled,
+              transparencyEnabled,
+              setIsTransparencyEnabled,
+              isSurveyModeEnabled,
+              setIsSurveyModeEnabled,
             }}
           >
             <AppNavigation />

@@ -3,6 +3,7 @@
     "name": "algepi-news-app",
     "slug": "algepi-news-app",
     "version": "1.0.0",
+    "newArchEnabled": true,
     "orientation": "portrait",
     "icon": "./assets/icons/icon.png",
     "userInterfaceStyle": "light",

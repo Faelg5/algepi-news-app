@@ -37,7 +37,7 @@ export default function WelcomeScreen() {
             fontFamily: "Helvetica",
           }}
         >
-          NewsWise
+          InforMate
         </Text>
 
         <Text
@@ -48,10 +48,11 @@ export default function WelcomeScreen() {
             fontWeight: "normal",
           }}
         >
-          NewsWise helps you see through your news feed in a new way.
-          Vary the ranking of your news based on your reading history or topics of interest.
-          Use the AI Lens to get summaries of news articles in a more neutral tone. 
-          Become aware of emotional language in news articles and see how it affects your perception. 
+Welcome to Informate—personalized news, powered by AI. Choose your style:
+	•	The Analyst for in-depth insights.
+	•	The Storyteller for engaging narratives.
+	•	The Curator for quick updates.
+Stay informed, entertained, and inspired—your way.
         </Text>
 
         <Text
