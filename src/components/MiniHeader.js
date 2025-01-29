@@ -1,28 +1,64 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import React, { useState } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { ColorList } from "../constants/colors";
 import Svg, { Circle } from "react-native-svg";
+import { UserPreferencesContext } from "../../App";
+import { transparencyEnabled } from "../screens/PreferencesScreen";
 
-
-export default function MiniHeader({ label, explanation, includeVis, fillColor }) {
+export default function MiniHeader({
+  label,
+  explanation,
+  includeVis,
+  fillColor,
+}) {
   const [showExplanation, setShowExplanation] = useState(false);
 
   const handlePress = () => {
     setShowExplanation(!showExplanation);
   };
 
+  const { isSurveyModeEnabled } = useContext(UserPreferencesContext);
+  useEffect(() => {
+    console.log("Survey Mode Enabled:", isSurveyModeEnabled);
+  }, [isSurveyModeEnabled]);
+
+
+  const { transparencyEnabled } = useContext(UserPreferencesContext);
+  useEffect(() => {
+    console.log("Transparency Enabled:", transparencyEnabled);
+  }, [transparencyEnabled]);
+
+
   // console.log(fillColor)
 
   return (
-    <View style={styles.headerContainer}>
-      <Text style={styles.headerText}>{label}</Text>
+    <View
+      className="flex-col max-w-[100%] shadow-md"
+      style={styles.headerContainer}
+    >
+      <View className="flex-wrap bg-red-60">
+        <View className="flex-row">
+          <Text style={styles.headerText}>{label}</Text>
 
-      <TouchableOpacity
-        onPress={handlePress}
-        style={[styles.infoButton, showExplanation && styles.infoButtonActive]}
-      >
-        <Text style={styles.infoButtonText}>i</Text>
-      </TouchableOpacity>
+          {transparencyEnabled && (
+            <TouchableOpacity
+              className="flex-col text-justify"
+              onPress={handlePress}
+              style={[
+                styles.infoButton,
+                showExplanation && styles.infoButtonActive,
+              ]}
+            >
+              <Text style={styles.infoButtonText}>i</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        {transparencyEnabled && (
+        <Text className="flex-wrap max-w-[100%]" style={styles.explanationText}>
+          {explanation}
+        </Text>
+        )}
+      </View>
 
       {showExplanation && (
         <View style={[styles.bubble, styles.shadow]}>
@@ -47,14 +83,10 @@ export default function MiniHeader({ label, explanation, includeVis, fillColor }
 const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     paddingHorizontal: 10,
     marginVertical: 10,
     position: "relative", // Ensure relative positioning for absolute child (bubble)
-    padding: 20,
-    backgroundColor: ColorList.backgroundColor,
-    borderRadius: 5,
+    padding: 10,
   },
   headerText: {
     fontSize: 20,

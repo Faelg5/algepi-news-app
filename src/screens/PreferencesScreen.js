@@ -8,6 +8,7 @@ import {
   Switch,
   Linking,
   FlatList,
+  ScrollView,
 } from "react-native";
 import {
   VictoryChart,
@@ -42,7 +43,9 @@ export var themes = [
 
 export var isTrackingEnabled = true;
 export var isContentFilterEnabled = true;
-
+export var userControlEnabled = true;
+export var transparencyEnabled = true;
+export var isSurveyModeEnabled = true;
 
 export const countries = [
   { code: "ar", name: "Argentina" },
@@ -147,7 +150,6 @@ const getCurrentMonth = () => {
 export default function PreferencesScreen() {
   const { clickedTopics } = useContext(UserHistoryContext);
 
-
   // Compter la fréquence des topics cliqués
   const topicCounts = clickedTopics.reduce((acc, topic) => {
     acc[topic] = (acc[topic] || 0) + 1;
@@ -194,8 +196,19 @@ export default function PreferencesScreen() {
     setSelectedLanguageCode,
   } = useContext(UserPreferencesContext);
 
-  const { isContentFilterEnabled, setIsContentFilterEnabled } = useContext(UserPreferencesContext);
+  const { isContentFilterEnabled, setIsContentFilterEnabled } = useContext(
+    UserPreferencesContext
+  );
+  const { userControlEnabled, setUserControlEnabled } = useContext(
+    UserPreferencesContext
+  );
+  const { transparencyEnabled, setIsTransparencyEnabled } = useContext(
+    UserPreferencesContext
+  );
 
+  const { isSurveyModeEnabled, setIsSurveyModeEnabled } = useContext(
+    UserPreferencesContext
+  );
 
   const [currentThemes, setCurrentThemes] = useState(
     selectedThemes || ["technology", "sports"]
@@ -206,7 +219,7 @@ export default function PreferencesScreen() {
   );
 
   const [isTrackingEnabled, setIsTrackingEnabled] = useState(true); // Default to true
-  
+
   useEffect(() => {
     setSelectedThemes(currentThemes);
     setSelectedCountry(currentCountry);
@@ -236,6 +249,18 @@ export default function PreferencesScreen() {
     setIsContentFilterEnabled((prevState) => !prevState);
   };
 
+  const handleUserControl = () => {
+    setUserControlEnabled((prevState) => !prevState);
+  };
+
+  const handleTransparency = () => {
+    setIsTransparencyEnabled((prevState) => !prevState);
+  };
+
+  const handleSurveyMode = () => {
+    setIsSurveyModeEnabled((prevState) => !prevState);
+  };
+
   const handleSelectCountry = (country) => {
     setCurrentCountry(country);
   };
@@ -254,86 +279,155 @@ export default function PreferencesScreen() {
       /> */}
 
       {/* Tracking preference */}
-      <View className="flex-row bg-white rounded-lg">
-      <View className="mx-10 my-10" style={styles.trackingContainer}>
-          <Text style={styles.title}>Enable usage tracking</Text>
-          <Text style={styles.explanationText}>
-            with{" "}
+      <ScrollView>
+        <View className="flex-col bg-white shadow rounded-2xl px-2 py-2 mx-2 my-2">
+          <View className="mx-10 my-8" style={styles.trackingContainer}>
+            <Text style={styles.title}>Enable usage analytics</Text>
+            <View className="flex-row bg-white rounded-lg my-4 mx-0 justify-between">
+              <Text style={styles.countryButtonText}>
+                {" "}
+                {translations[selectedLanguageCode].enableUsageAnalytics}
+              </Text>
+              <Switch
+                value={isTrackingEnabled}
+                onValueChange={handleToggleTracking}
+                style={styles.switch}
+              />
+            </View>
+            <View>
+              <Text style={styles.explanationText}>
+                Anonymous data collection with{" "}
+                <Text
+                  style={[
+                    styles.explanationText,
+                    {
+                      color: ColorList.primary,
+                      textDecorationLine: "underline",
+                    },
+                  ]}
+                  onPress={() =>
+                    Linking.openURL("https://aptabase.com/legal/privacy")
+                  }
+                >
+                  AptaBase Analytics
+                </Text>
+              </Text>
+            </View>
+            <View className="flex-row bg-white rounded-lg items-center justify-between">
+              <Text style={styles.countryButtonText}>
+                {" "}
+                {translations[selectedLanguageCode].enableSurveyMode}
+              </Text>
+              <Switch
+                value={isSurveyModeEnabled}
+                onValueChange={handleSurveyMode}
+                style={styles.switch}
+              />
+            </View>
+            {/* ------- Horizontal line ------- */}
+            <View className="h-px bg-gray-200 mx-4" />
+          </View>
+        </View>
+
+        {/* Content Filtering preference */}
+        <View className="flex-col bg-white shadow rounded-2xl px-2 py-2 mx-2 my-2">
+          <View
+            className="mx-4 my-8 justify-between"
+            style={styles.trackingContainer}
+          >
+            <View className="flex-col bg-white rounded-lg my-4 mx-0 justify-between">
+              <Text style={styles.title}>
+                {" "}
+                {translations[selectedLanguageCode].enablePersonalization}
+              </Text>
+
+              <View className="flex-row bg-white rounded-lg items-center justify-between">
+                <Text style={styles.countryButtonText}>
+                  {" "}
+                  {translations[selectedLanguageCode].enableFeedPersonalization}
+                </Text>
+
+                <Switch
+                  value={isContentFilterEnabled}
+                  onValueChange={handleToggleContentFiltering}
+                  style={styles.switch}
+                />
+              </View>
+            </View>
+            <Text style={styles.explanationText}>
+              {translations[selectedLanguageCode].didYouKnow}{" "}
+              {translations[selectedLanguageCode].contentFilterExplanation}
+            </Text>
             <Text
+              className="my-2"
               style={[
                 styles.explanationText,
                 { color: ColorList.primary, textDecorationLine: "underline" },
               ]}
-              onPress={() =>
-                Linking.openURL("https://aptabase.com/legal/privacy")
-              }
+              onPress={() => Linking.openURL("https://algepi.com")}
             >
-              AptaBase Analytics
+              {translations[selectedLanguageCode].learnMore}
             </Text>
-          </Text>
-        </View>
-        <View className="mx-10 my-10" style={styles.trackingContainer}>
-          <Switch
-            value={isTrackingEnabled}
-            onValueChange={handleToggleTracking}
-            style={styles.switch}
-          />
-        </View>
-        </View>
+            {/* ------- Horizontal line ------- */}
+            <View className="h-px bg-gray-200 mx-4" />
+          </View>
 
-
-
-
-      {/* Content Filtering preference */}
-      <View className="flex-row bg-gray rounded-lg">
-        <View className="mx-10 my-10" style={styles.trackingContainer}>
-          <Text style={styles.title}>
-            {" "}
-            {translations[selectedLanguageCode].enableFeedPersonalization}
-          </Text>
-          <Text style={styles.explanationText}>
-            {translations[selectedLanguageCode].didYouKnow}{" "}
-            {translations[selectedLanguageCode].contentFilterExplanation}
-          </Text>
-
-          <Text
-            style={[
-              styles.explanationText,
-              { color: ColorList.primary, textDecorationLine: "underline" },
-            ]}
-            onPress={() => Linking.openURL("https://algepi.com")}
+          <View
+            className="flex-row mx-4 my-0 items-center "
+            style={styles.trackingContainer}
           >
-            {translations[selectedLanguageCode].learnMore}
-          </Text>
-          <Switch
-            value={isContentFilterEnabled}
-            onValueChange={handleToggleContentFiltering}
-            style={styles.switch}
-          />
+            <View className="flex-row bg-white rounded-lg items-center justify-between">
+              <Text style={styles.countryButtonText}>
+                {" "}
+                {translations[selectedLanguageCode].enableUserControl}
+              </Text>
+              <Switch
+                value={userControlEnabled}
+                onValueChange={handleUserControl}
+                style={styles.switch}
+              />
+            </View>
+            {/* ------- Horizontal line ------- */}
+            <View className="h-px bg-gray-200 mx-4" />
+
+            <View className="flex-row bg-white rounded-lg my-4 items-center justify-between">
+              <Text classname="mx-20" style={styles.countryButtonText}>
+                {" "}
+                {translations[selectedLanguageCode].enableTransparency}
+              </Text>
+              <Switch
+                className="mx-2"
+                value={transparencyEnabled}
+                onValueChange={handleTransparency}
+                style={styles.switch}
+              />
+            </View>
+          </View>
         </View>
 
-      </View>
+        <View className="mx-10 my-8" style={styles.trackingContainer}>
+          <Text style={styles.title}>
+            {translations[selectedLanguageCode].clickedTopicsTitle}
+          </Text>
 
-<View className="mx-10 my-10" style={styles.trackingContainer}>
-  <Text style={styles.title}>{translations[selectedLanguageCode].clickedTopicsTitle}</Text>
+          {data.length > 0 ? (
+            <View className="mx-10 my-4" style={styles.trackingContainer}>
+              <Text style={{ fontSize: 16, marginTop: 10 }}>
+                {data
+                  .map(({ topic, count }) => `${topic} (${count})`)
+                  .join(", ")}{" "}
+                {/* Transforme les topics en texte formaté */}
+                {translations[selectedLanguageCode].inText} {getCurrentMonth()}.
+              </Text>
+            </View>
+          ) : (
+            <Text style={{ textAlign: "center", marginTop: 20 }}>
+              Aucun historique de topics pour les 30 derniers jours.
+            </Text>
+          )}
+        </View>
 
-  {data.length > 0 ? (
-    <View className="mx-10 my-10" style={styles.trackingContainer}>
-    <Text style={{ fontSize: 16, marginTop: 10 }}>
-      {data.map(({ topic, count }) => `${topic} (${count})`).join(", ")}{" "}
-      {/* Transforme les topics en texte formaté */}
-     {translations[selectedLanguageCode].inText} {getCurrentMonth()}.
-    </Text>
-    </View>
-  ) : (
-    <Text style={{ textAlign: "center", marginTop: 20 }}>
-      Aucun historique de topics pour les 30 derniers jours.
-    </Text>
-  )}
-</View>
-
-
-      {/* <View className="mx-10 my-10" style={styles.trackingContainer}>
+        {/* <View className="mx-10 my-10" style={styles.trackingContainer}>
         <Text style={styles.title}>Themes history:</Text>
         {selectedThemes && selectedThemes.length > 0 ? (
           <View style={styles.themesContainer}>
@@ -384,26 +478,32 @@ export default function PreferencesScreen() {
         )}
       </View> */}
 
-      {/* Other preferences */}
+        {/* Other preferences */}
+        <ScrollView contentContainerStyle={{ paddingBottom: 50 }}>
+          {/* Autres composants ici */}
 
-      <Text className="mx-8 my-8" style={styles.title}>
-        {translations[selectedLanguageCode].languagePreferenceText}
-      </Text>
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={currentLanguageCode}
-          onValueChange={(itemValue) => handleSelectLanguage(itemValue)}
-          style={styles.picker}
-        >
-          {languages.map((language, index) => (
-            <Picker.Item
-              key={index}
-              label={language.name}
-              value={language.code}
-            />
-          ))}
-        </Picker>
-      </View>
+          <View style={{ marginTop: 20, marginBottom: 100 }}>
+            <Text className="mx-8 my-4" style={styles.title}>
+              {translations[selectedLanguageCode].languagePreferenceText}
+            </Text>
+            <View style={[styles.pickerContainer, { marginBottom: 50 }]}>
+              <Picker
+                selectedValue={currentLanguageCode}
+                onValueChange={(itemValue) => handleSelectLanguage(itemValue)}
+                style={[styles.picker, { height: 200 }]} // Augmenter la hauteur si nécessaire
+              >
+                {languages.map((language, index) => (
+                  <Picker.Item
+                    key={index}
+                    label={language.name}
+                    value={language.code}
+                  />
+                ))}
+              </Picker>
+            </View>
+          </View>
+        </ScrollView>
+      </ScrollView>
     </SafeAreaView>
   );
 }

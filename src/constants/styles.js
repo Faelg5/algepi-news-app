@@ -180,7 +180,7 @@ export default StyleSheet.create({
   },
   // Styles for PreferencesScreen
   title: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: "bold",
     marginBottom: 20,
   },
