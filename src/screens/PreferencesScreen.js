@@ -206,6 +206,10 @@ export default function PreferencesScreen() {
     UserPreferencesContext
   );
 
+  const { itemLevelTransparencyEnabled, setIsItemLevelTransparencyEnabled } = useContext(
+    UserPreferencesContext
+  );
+
   const { isSurveyModeEnabled, setIsSurveyModeEnabled } = useContext(
     UserPreferencesContext
   );
@@ -255,6 +259,10 @@ export default function PreferencesScreen() {
 
   const handleTransparency = () => {
     setIsTransparencyEnabled((prevState) => !prevState);
+  };
+
+  const handleItemLevelTransparency = () => {
+    setIsItemLevelTransparencyEnabled((prevState) => !prevState);
   };
 
   const handleSurveyMode = () => {
@@ -368,6 +376,32 @@ export default function PreferencesScreen() {
             >
               {translations[selectedLanguageCode].learnMore}
             </Text>
+
+        <View className="mx-10 my-8" style={styles.trackingContainer}>
+          <Text style={styles.subTitle}>
+            {translations[selectedLanguageCode].clickedTopicsTitle} {translations[selectedLanguageCode].inText}
+            <Text> </Text>  
+            <Text className="font-semibold">
+            {getCurrentMonth()}
+            </Text>
+          </Text>
+
+          {data.length > 0 ? (
+            <View className="mx-10 my-4" style={styles.trackingContainer}>
+              <Text style={{ fontSize: 16, marginTop: 10 }}>
+                {data
+                  .map(({ topic, count }) => `${topic} (${count})`)
+                  .join(", ")}{" "}
+                {/* Transforme les topics en texte formaté */}
+                {translations[selectedLanguageCode].inText} {getCurrentMonth()}.
+              </Text>
+            </View>
+          ) : (
+            <Text style={{ textAlign: "center", marginTop: 20 }}>
+                {translations[selectedLanguageCode].clickedTopics} .
+                </Text>
+          )}
+        </View>
             {/* ------- Horizontal line ------- */}
             <View className="h-px bg-gray-200 mx-4" />
           </View>
@@ -402,30 +436,22 @@ export default function PreferencesScreen() {
                 style={styles.switch}
               />
             </View>
+
+            <View className="flex-row bg-white rounded-lg my-4 items-center justify-between">
+              <Text classname="mx-20" style={styles.countryButtonText}>
+                {" "}
+                {translations[selectedLanguageCode].enableItemLevelTransparency}
+              </Text>
+              <Switch
+                className="mx-2"
+                value={itemLevelTransparencyEnabled}
+                onValueChange={handleItemLevelTransparency}
+                style={styles.switch}
+              />
+            </View>
           </View>
         </View>
 
-        <View className="mx-10 my-8" style={styles.trackingContainer}>
-          <Text style={styles.title}>
-            {translations[selectedLanguageCode].clickedTopicsTitle}
-          </Text>
-
-          {data.length > 0 ? (
-            <View className="mx-10 my-4" style={styles.trackingContainer}>
-              <Text style={{ fontSize: 16, marginTop: 10 }}>
-                {data
-                  .map(({ topic, count }) => `${topic} (${count})`)
-                  .join(", ")}{" "}
-                {/* Transforme les topics en texte formaté */}
-                {translations[selectedLanguageCode].inText} {getCurrentMonth()}.
-              </Text>
-            </View>
-          ) : (
-            <Text style={{ textAlign: "center", marginTop: 20 }}>
-              Aucun historique de topics pour les 30 derniers jours.
-            </Text>
-          )}
-        </View>
 
         {/* <View className="mx-10 my-10" style={styles.trackingContainer}>
         <Text style={styles.title}>Themes history:</Text>

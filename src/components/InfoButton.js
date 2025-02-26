@@ -25,12 +25,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: 'gray',
     marginLeft: 5,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'Roboto-Bold',
   },
   additionalText: {
     marginTop: 5,
     fontSize: 14,
     color: 'black',
-    fontFamily: 'Helvetica',
+    fontFamily: 'Roboto',
   },
 });

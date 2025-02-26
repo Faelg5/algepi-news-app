@@ -14,10 +14,12 @@ const [selectedLanguageCode, setSelectedLanguageCode] = useState('fr');
   const [isContentFilterEnabled, setIsContentFilterEnabled] = useState();
   const [userControlEnabled, setUserControlEnabled] = useState();
   const [transparencyEnabled, setIsTransparencyEnabled] = useState();
+  const [itemLevelTransparencyEnabled, setIsItemLevelTransparencyEnabled] = useState();
+
   const [isSurveyModeEnabled, setIsSurveyModeEnabled] = useState();
 
   return (
-    <UserPreferencesContext.Provider value={{ selectedThemes, setSelectedThemes, selectedCountry, setSelectedCountry, selectedLanguageCode, setSelectedLanguageCode, isContentFilterEnabled, setIsContentFilterEnabled, userControlEnabled, setUserControlEnabled, transparencyEnabled, setIsTransparencyEnabled, isSurveyModeEnabled, setIsSurveyModeEnabled}}>
+    <UserPreferencesContext.Provider value={{ selectedThemes, setSelectedThemes, selectedCountry, setSelectedCountry, selectedLanguageCode, setSelectedLanguageCode, isContentFilterEnabled, setIsContentFilterEnabled, userControlEnabled, setUserControlEnabled, transparencyEnabled, setIsTransparencyEnabled, itemLevelTransparencyEnabled, setIsItemLevelTransparencyEnabled, isSurveyModeEnabled, setIsSurveyModeEnabled}}>
       {children}
     </UserPreferencesContext.Provider>
   );
