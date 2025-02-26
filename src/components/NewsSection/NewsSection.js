@@ -135,7 +135,7 @@ export default function NewsSection({ newsProps }) {
               className="text-neutral-800 capitalize max-w-[90%] dark:text-white "
               style={{
                 fontSize: hp(1.7),
-                fontFamily: "SpaceGroteskBold",
+                fontFamily: "RobotoBold",
               }}
             >
               {item.title.length > 50

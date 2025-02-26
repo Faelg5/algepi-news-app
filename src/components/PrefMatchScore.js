@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 16,
     color: "#000",
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Roboto-Bold",
   },
   infoButton: {
     width: 20,
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
   infoButtonText: {
     fontSize: 12,
     color: "#fff",
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Roboto-Bold",
   },
   bubble: {
     backgroundColor: "rgba(255, 255, 255, 1)",
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   explanationText: {
-    fontFamily: "Helvetica",
+    fontFamily: "Roboto",
     color: "#000",
     textAlign: "left",
     lineHeight: 14,

@@ -196,9 +196,11 @@ export default function AskGPTScreen() {
 
   const { colorScheme, toggleColorScheme } = useColorScheme();
   const [fontsLoaded, fontError] = useFonts({
-    SpaceGroteskMedium: require("../fonts/SpaceGrotesk-Medium.ttf"),
-    SpaceGroteskSemibold: require("../fonts/SpaceGrotesk-SemiBold.ttf"),
-    SpaceGroteskBold: require("../fonts/SpaceGrotesk-Bold.ttf"),
+    RobotoMedium: require("../fonts/RobotoFont/static/Roboto-Medium.ttf"),
+
+    RobotoSemibold: require("../fonts/RobotoFont/static/Roboto-SemiBold.ttf"),
+
+    RobotoBold: require("../fonts/RobotoFont/static/Roboto-Bold.ttf"),
   });
 
   useEffect(() => {

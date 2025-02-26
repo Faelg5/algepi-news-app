@@ -22,10 +22,10 @@ import { UserHistoryContext } from "../context/UserHistoryContext";
 
 import { useColorScheme } from "nativewind";
 import { useQuery } from "react-query";
-import { 
+import {
   fetchAllNewsNA,
   fetchRecommendedNews,
-  fetchTNA, 
+  fetchTNA,
   fetchNCA,
 } from "../../utils/NewsApi";
 import Header from "../components/Header";
@@ -82,6 +82,8 @@ const summarizationEnabled = true; // Boolean to enable or disable summarization
 
 // Calculer la date par défaut (3 mois avant aujourd'hui)
 const FROM_DATE = dayjs().subtract(1, "month").format("YYYY/MM/DD");
+
+const screenShotMode = true; // Boolean to enable or disable screenshot mode
 
 // HEATMAP Functions section
 
@@ -616,6 +618,37 @@ export default function FeedScreen({ navigation }) {
 
   const groupedTopics = processClickedTopics(clickedTopics);
 
+  const loadSavedArticles = async () => {
+    // if (language == "nl") {
+    //   // load dutch articles
+    console.log("loading dutch articles from local file...");
+    const fileUri = FileSystem.documentDirectory + "filteredArticles_nl.json";
+    // } else {
+    //   // load standard french articles
+    //   const fileUri = FileSystem.documentDirectory + "filteredArticles.json";
+    // }
+
+    try {
+      console.log("📂 Lecture du fichier des articles sauvegardés...");
+      const fileContent = await FileSystem.readAsStringAsync(fileUri);
+      const parsedData = JSON.parse(fileContent);
+
+      console.log(
+        "✅ Articles chargés depuis le fichier :",
+        parsedData.length,
+        "articles"
+      );
+
+      setNewsData(parsedData);
+      setUnsortedNewsData(parsedData);
+      setIsLoading(false);
+    } catch (error) {
+      console.error("❌ Erreur de lecture du fichier :", error);
+    } finally {
+      setIsLoading(false); // S'assurer que le loading est désactivé même en cas d'erreur
+    }
+  };
+
   /// USER PREFERENCES
 
   const { isContentFilterEnabled } = useContext(UserPreferencesContext);
@@ -633,10 +666,15 @@ export default function FeedScreen({ navigation }) {
     console.log("Transparency enabled:", transparencyEnabled);
   }, [transparencyEnabled]);
 
-  const { isSurveyModeEnabled } = useContext(UserPreferencesContext);
+  const { itemLevelTransparencyEnabled } = useContext(UserPreferencesContext);
   useEffect(() => {
-    console.log("Survey Mode Enabled:", isSurveyModeEnabled);
-  }, [isSurveyModeEnabled]);
+    console.log(
+      "Item-level transparency enabled:",
+      itemLevelTransparencyEnabled
+    );
+  }, [itemLevelTransparencyEnabled]);
+
+  const { isSurveyModeEnabled } = useContext(UserPreferencesContext);
 
   /// DATAVIS SECTION ///////////
 
@@ -702,7 +740,7 @@ export default function FeedScreen({ navigation }) {
       return;
     }
 
-    console.log("Selected Language Code:", selectedLanguageCode);
+    alert("Selected Language Code:", selectedLanguageCode);
     const languageName = getLanguageName(selectedLanguageCode);
     if (!languageName || !languageName.trim()) {
       console.error("Invalid language name for summarization.");
@@ -809,8 +847,6 @@ export default function FeedScreen({ navigation }) {
     UserPreferencesContext
   ); // Use context to get user preferences
 
-
-
   // Dynamic source selection - update this variable if API change is required
   const [source, setSource] = useState("newsCatcherApi");
 
@@ -818,7 +854,7 @@ export default function FeedScreen({ navigation }) {
   const [newsData, setNewsData] = useState([]);
   const [pageSize, setPageSize] = useState([]);
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState();
   // const [source, setSource] = useState("theNewsApi");
   const [newsWithSentiments, setNewsWithSentiments] = useState([]);
   const [newsWithSummaries, setNewsWithSummaries] = useState([]);
@@ -827,14 +863,20 @@ export default function FeedScreen({ navigation }) {
 
   const [activeTheme, setActiveTheme] = useState();
 
-  const defaultSurveyThemes = ["Technology", "Finance", "Health", "Politics", "Environment"]; // Define default themes for Survey Mode
+  const defaultSurveyThemes = [
+    "Technology",
+    "Finance",
+    "Health",
+    "Politics",
+    "Environment",
+  ]; // Define default themes for Survey Mode
 
   const [localSelectedThemes, setLocalSelectedThemes] = useState(
     isSurveyModeEnabled ? defaultSurveyThemes : selectedThemes || []
   );
-  
+
   const [andOperator, setAndOperator] = useState(false);
-  const [sortByMatch, setSortByMatch] = useState(false);
+  const [sortByMatch, setSortByMatch] = useState(true);
 
   const [htmlContent, setHtmlContent] = useState("");
 
@@ -883,8 +925,9 @@ export default function FeedScreen({ navigation }) {
 
     console.log("fetching news, called from: " + calledFrom);
     console.log("fetching news with these themes...", localSelectedThemes);
-
-    setIsLoading(true);
+    if (!isSurveyModeEnabled) {
+      setIsLoading(true);
+    }
 
     let articles = [];
     let page = 1;
@@ -1146,7 +1189,7 @@ export default function FeedScreen({ navigation }) {
     return;
   };
 
-  const processNewsData = async (calledFrom, storeToFile = false) => {
+  const processNewsData = async (calledFrom, storeToFile = true) => {
     console.log("Processing news data, called from: " + calledFrom);
 
     let allNewsData = [];
@@ -1156,162 +1199,169 @@ export default function FeedScreen({ navigation }) {
     const currentDate = dayjs();
     const startDate = dayjs().subtract(maxMonths, "month");
 
-    // Générer les plages mensuelles
-    const monthlyRanges = [];
-    let tempDate = startDate.startOf("month");
+    if (isSurveyModeEnabled) {
+      // Mode sondage : récupérer des articles pour les thèmes par défaut
+      console.log("Survey Mode enabled. Fetching articles for default themes.");
+      localSelectedThemes = defaultSurveyThemes;
+    } else {
+      // Générer les plages mensuelles
+      const monthlyRanges = [];
+      let tempDate = startDate.startOf("month");
 
-    while (tempDate.isBefore(currentDate)) {
-      const from = tempDate.format("YYYY-MM-DD");
-      const to = tempDate.endOf("month").format("YYYY-MM-DD");
-      monthlyRanges.push({ from, to });
-      tempDate = tempDate.add(1, "month");
-    }
+      while (tempDate.isBefore(currentDate)) {
+        const from = tempDate.format("YYYY-MM-DD");
+        const to = tempDate.endOf("month").format("YYYY-MM-DD");
+        monthlyRanges.push({ from, to });
+        tempDate = tempDate.add(1, "month");
+      }
 
-    console.log(
-      `Generated ${monthlyRanges.length} date ranges for ${maxMonths} years.`
-    );
-
-    for (const { from, to } of monthlyRanges) {
       console.log(
-        `Fetching up to ${articlesPerMonth} articles from ${from} to ${to}...`
+        `Generated ${monthlyRanges.length} date ranges for ${maxMonths} years.`
       );
 
-      try {
-        let currentPage = 1;
-        let fetchedArticles = [];
-        let hasMorePages = true;
-        console.log("current language Code: " + currentLanguageCode);
-        while (
-          hasMorePages &&
-          (storeToFile
-            ? fetchedArticles.length < articlesPerMonth
-            : currentPage === 1)
-        ) {
-          const response = await fetchNCA(
-            localSelectedThemes.join(queryOperator), // Recherche par mots-clés
-            [],
-            from, // Date de début
-            currentPage,
-            currentLanguageCode,
-            { to, page_size: storeToFile ? 10 : articlesPerMonth } // Taille adaptée au mode
-          );
-
-          if (response && response.articles && response.articles.length > 0) {
-            if (storeToFile) {
-              // Mélanger les articles pour en obtenir un échantillon aléatoire
-              const shuffledArticles = response.articles.sort(
-                () => Math.random() - 0.5
-              );
-
-              // Ajouter les articles jusqu'à la limite d'articles par mois
-              const articlesToAdd = shuffledArticles.slice(
-                0,
-                articlesPerMonth - fetchedArticles.length
-              );
-              fetchedArticles = fetchedArticles.concat(articlesToAdd);
-            } else {
-              // Si storeToFile est false, récupérer les articles de la première page
-              fetchedArticles = fetchedArticles.concat(response.articles);
-              hasMorePages = false; // On ne veut qu'une page dans ce mode
-            }
-
-            console.log(
-              `Page ${currentPage}: ${
-                storeToFile ? fetchedArticles.length : response.articles.length
-              } articles added.`
-            );
-            currentPage++;
-          } else {
-            console.warn(`No more articles found for ${from} to ${to}.`);
-            hasMorePages = false;
-          }
-        }
-
-        // Ajouter les articles récupérés pour ce mois au tableau global
-        allNewsData = allNewsData.concat(fetchedArticles);
-        fetchedNewsData = allNewsData;
-
+      for (const { from, to } of monthlyRanges) {
         console.log(
-          `Fetched ${fetchedArticles.length} articles for ${from} to ${to}.`
+          `Fetching up to ${articlesPerMonth} articles from ${from} to ${to}...`
         );
-      } catch (error) {
-        console.error(`Error fetching articles for ${from} to ${to}:`, error);
+
+        try {
+          let currentPage = 1;
+          let fetchedArticles = [];
+          let hasMorePages = true;
+          console.log("current language Code: " + currentLanguageCode);
+          while (
+            hasMorePages &&
+            (storeToFile
+              ? fetchedArticles.length < articlesPerMonth
+              : currentPage === 1)
+          ) {
+            const response = await fetchNCA(
+              localSelectedThemes.join(queryOperator), // Recherche par mots-clés
+              [],
+              from, // Date de début
+              currentPage,
+              currentLanguageCode,
+              { to, page_size: storeToFile ? 10 : articlesPerMonth } // Taille adaptée au mode
+            );
+
+            if (response && response.articles && response.articles.length > 0) {
+              if (storeToFile) {
+                // Mélanger les articles pour en obtenir un échantillon aléatoire
+                const shuffledArticles = response.articles.sort(
+                  () => Math.random() - 0.5
+                );
+
+                // Ajouter les articles jusqu'à la limite d'articles par mois
+                const articlesToAdd = shuffledArticles.slice(
+                  0,
+                  articlesPerMonth - fetchedArticles.length
+                );
+                fetchedArticles = fetchedArticles.concat(articlesToAdd);
+              } else {
+                // Si storeToFile est false, récupérer les articles de la première page
+                fetchedArticles = fetchedArticles.concat(response.articles);
+                hasMorePages = false; // On ne veut qu'une page dans ce mode
+              }
+
+              console.log(
+                `Page ${currentPage}: ${
+                  storeToFile
+                    ? fetchedArticles.length
+                    : response.articles.length
+                } articles added.`
+              );
+              currentPage++;
+            } else {
+              console.warn(`No more articles found for ${from} to ${to}.`);
+              hasMorePages = false;
+            }
+          }
+
+          // Ajouter les articles récupérés pour ce mois au tableau global
+          allNewsData = allNewsData.concat(fetchedArticles);
+          fetchedNewsData = allNewsData;
+
+          console.log(
+            `Fetched ${fetchedArticles.length} articles for ${from} to ${to}.`
+          );
+        } catch (error) {
+          console.error(`Error fetching articles for ${from} to ${to}:`, error);
+        }
+      }
+
+      console.log(`Total articles fetched: ${allNewsData.length}`);
+
+      if (allNewsData.length === 0) {
+        console.log("No news data available");
+        setIsLoading(false);
+        return;
+      }
+
+      if (storeToFile) {
+        console.log("Storing articles to file...");
+        // Générer un nom de fichier avec les thèmes
+        const themePart = localSelectedThemes
+          .join("_")
+          .replace(/[^a-zA-Z0-9_]/g, "")
+          .slice(0, 50); // Nettoyage et limite de taille
+        const fileName = `articles_${themePart}_${dayjs().format(
+          "YYYY-MM-DD"
+        )}.json`;
+
+        // Enregistrez tous les articles dans un fichier
+        const jsonData = JSON.stringify(allNewsData, null, 2);
+        const fileUri = FileSystem.documentDirectory + fileName;
+
+        FileSystem.writeAsStringAsync(fileUri, jsonData)
+          .then(() => {
+            console.log(
+              `All articles (${allNewsData.length}) saved to ${fileUri}`
+            );
+          })
+          .catch((error) => {
+            console.error("Error saving file:", error);
+          });
       }
     }
-
-    console.log(`Total articles fetched: ${allNewsData.length}`);
-
-    if (allNewsData.length === 0) {
-      console.log("No news data available");
-      setIsLoading(false);
-      return;
-    }
-
-    if (storeToFile) {
-      console.log("Storing articles to file...");
-      // Générer un nom de fichier avec les thèmes
-      const themePart = localSelectedThemes
-        .join("_")
-        .replace(/[^a-zA-Z0-9_]/g, "")
-        .slice(0, 50); // Nettoyage et limite de taille
-      const fileName = `articles_${themePart}_${dayjs().format(
-        "YYYY-MM-DD"
-      )}.json`;
-
-      // Enregistrez tous les articles dans un fichier
-      const jsonData = JSON.stringify(allNewsData, null, 2);
-      const fileUri = FileSystem.documentDirectory + fileName;
-
-      FileSystem.writeAsStringAsync(fileUri, jsonData)
-        .then(() => {
-          console.log(
-            `All articles (${allNewsData.length}) saved to ${fileUri}`
-          );
-        })
-        .catch((error) => {
-          console.error("Error saving file:", error);
-        });
-    }
-
     // Mettez à jour les états avec les données
     setNewsData(allNewsData);
     setUnsortedNewsData(allNewsData);
     setIsLoading(false);
   };
 
-  useEffect(() => {
-    console.log("RUNNING GET NEWSCATCHER NEWS USEEFFECT");
-    const getNewsCatcherNews = async () => {
-      try {
-        const news = await fetchNews(localSelectedThemes); // localSelectedThemes = les mots-clé souhaités
-        setArticles(news);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    getNewsCatcherNews();
-  }, []);
+  // useEffect(() => {
+  //   console.log("RUNNING GET NEWSCATCHER NEWS USEEFFECT");
+  //   const getNewsCatcherNews = async () => {
+  //     try {
+  //       const news = await fetchNews(localSelectedThemes); // localSelectedThemes = les mots-clé souhaités
+  //       setArticles(news);
+  //     } catch (error) {
+  //       console.error(error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   getNewsCatcherNews();
+  // }, []);
 
-  // code to calculate monthly occurences for alls elected themes
-  useEffect(() => {
-    console.log("useEffect triggered");
-    const processDataOffline = async () => {
-      console.log("processDataOffline called");
-      try {
-        const totals = await calculateMonthlyOccurrencesForAllThemes(
-          fileUri,
-          localSelectedThemes
-        );
-        console.log("Totals:", totals);
-        setMonthlyData(totals);
-      } catch (error) {
-        console.error("Error in processDataOffline:", error);
-      }
-    };
-    processDataOffline();
-  }, []);
+  // // code to calculate monthly occurences for alls elected themes
+  // useEffect(() => {
+  //   console.log("useEffect triggered");
+  //   const processDataOffline = async () => {
+  //     console.log("processDataOffline called");
+  //     try {
+  //       const totals = await calculateMonthlyOccurrencesForAllThemes(
+  //         fileUri,
+  //         localSelectedThemes
+  //       );
+  //       console.log("Totals:", totals);
+  //       setMonthlyData(totals);
+  //     } catch (error) {
+  //       console.error("Error in processDataOffline:", error);
+  //     }
+  //   };
+  //   processDataOffline();
+  // }, []);
 
   useEffect(() => {
     console.log("Monthly Data:", monthlyData);
@@ -1380,7 +1430,7 @@ export default function FeedScreen({ navigation }) {
 
     processNewsData("localSelectedThemes useEffect")
       .then(() => {
-        console.log("Local Selected Themes UseEffect")
+        console.log("Local Selected Themes UseEffect");
 
         // Sorting
         if (sortByMatch) {
@@ -1436,55 +1486,61 @@ export default function FeedScreen({ navigation }) {
   //   }
   // }, [andOperator]);
 
+  /// FETCH NEWS FROM NEWSCATCHER API
   useEffect(() => {
-    console.log("selected themes:::: " + localSelectedThemes);
-    if (andOperator) {
-      queryOperator = " AND ";
+    if (isSurveyModeEnabled) {
+      loadSavedArticles();
+      return;
     } else {
-      queryOperator = " OR ";
-    }
-    fetchNCA(
-      localSelectedThemes.join(queryOperator),
-      [],
-      FROM_DATE,
-      1,
-      currentLanguageCode
-    ) // Envoie les thèmes comme une requête combinée avec "OR" ou "AND" selon le choix fait par l'utilisateur
-      .then((fetchedNewsData) => {
-        console.log("fetched news data after switch toggle: ");
-        console.log(fetchedNewsData);
-        console.log(fetchedNewsData.length);
-        setNewsData(fetchedNewsData);
-        setUnsortedNewsData(fetchedNewsData);
+      console.log("selected themes:::: " + localSelectedThemes);
+      if (andOperator) {
+        queryOperator = " AND ";
+      } else {
+        queryOperator = " OR ";
+      }
+      fetchNCA(
+        localSelectedThemes.join(queryOperator),
+        [],
+        FROM_DATE,
+        1,
+        currentLanguageCode
+      ) // Envoie les thèmes comme une requête combinée avec "OR" ou "AND" selon le choix fait par l'utilisateur
+        .then((fetchedNewsData) => {
+          console.log("fetched news data after switch toggle: ");
+          console.log(fetchedNewsData);
+          console.log(fetchedNewsData.length);
+          setNewsData(fetchedNewsData);
+          setUnsortedNewsData(fetchedNewsData);
 
-        processNewsData("andOperator useEffect")
-          .then(() => {
-            if (sortByMatch) {
-              console.log("Sorting by match");
-              // Save the current newsData to unsortedNewsData if it's not already saved
-              if (unsortedNewsData.length === 0) {
-                setUnsortedNewsData([...newsData]);
+          processNewsData("andOperator useEffect")
+            .then(() => {
+              if (sortByMatch) {
+                console.log("Sorting by match");
+                // Save the current newsData to unsortedNewsData if it's not already saved
+                if (unsortedNewsData.length === 0) {
+                  setUnsortedNewsData([...newsData]);
+                }
+
+                // Sort and update newsData
+                const sortedNewsData = [...newsData].sort(
+                  (a, b) => b.tfidfScore - a.tfidfScore
+                );
+                setNewsData(sortedNewsData);
+              } else {
+                console.log(
+                  "Resetting to default sort order (toggleAndOperator)"
+                );
+
+                // // Reset to the original unsorted data
+                // if (unsortedNewsData.length > 0) {
+                //   setNewsData([...unsortedNewsData]);
+                // }
               }
-
-              // Sort and update newsData
-              const sortedNewsData = [...newsData].sort(
-                (a, b) => b.tfidfScore - a.tfidfScore
-              );
-              setNewsData(sortedNewsData);
-            } else {
-              console.log(
-                "Resetting to default sort order (toggleAndOperator)"
-              );
-
-              // // Reset to the original unsorted data
-              // if (unsortedNewsData.length > 0) {
-              //   setNewsData([...unsortedNewsData]);
-              // }
-            }
-          })
-          .catch((error) => console.log("error: " + error));
-      })
-      .catch((error) => console.log("Fetch news error: " + error));
+            })
+            .catch((error) => console.log("error: " + error));
+        })
+        .catch((error) => console.log("Fetch news error: " + error));
+    }
   }, [andOperator]);
 
   useEffect(() => {
@@ -1553,9 +1609,11 @@ export default function FeedScreen({ navigation }) {
   }, [showSummaries]);
 
   const [fontsLoaded, fontError] = useFonts({
-    SpaceGroteskMedium: require("../fonts/SpaceGrotesk-Medium.ttf"),
-    SpaceGroteskSemibold: require("../fonts/SpaceGrotesk-SemiBold.ttf"),
-    SpaceGroteskBold: require("../fonts/SpaceGrotesk-Bold.ttf"),
+    RobotoMedium: require("../fonts/RobotoFont/static/Roboto-Medium.ttf"),
+
+    RobotoSemibold: require("../fonts/RobotoFont/static/Roboto-SemiBold.ttf"),
+
+    RobotoBold: require("../fonts/RobotoFont/static/Roboto-Bold.ttf"),
   });
 
   // when fonts change or font error occurs
@@ -1659,6 +1717,24 @@ export default function FeedScreen({ navigation }) {
   //     console.error("Error fetching news:", error);
   //   },
   // });
+
+  useEffect(() => {
+    console.log(
+      "📂 Survey Mode activé, chargement des articles sauvegardés..."
+    );
+
+    if (isSurveyModeEnabled) {
+      // Ne recharge pas si on a déjà des articles
+      if (newsData.length > 0) {
+        console.log("✅ Articles déjà chargés, pas de nouveau chargement.");
+        return;
+      }
+
+      setIsLoading(true); // Active le loading uniquement si on n'a pas encore chargé les articles
+
+      loadSavedArticles();
+    }
+  }, [isSurveyModeEnabled]);
 
   const handleSelectCountry = (country) => {
     setCurrentCountry(country);
@@ -1815,31 +1891,40 @@ export default function FeedScreen({ navigation }) {
       // If survey Mode enabled, hide top elements
       {isSurveyModeEnabled ? (
         <>
-          <View
-            style={[styles.themesContainer]}
-            className="flex-row mx-2 my-4 justify-between"
-          >
-            <Text className="my-0 mx-2" style={styles.subTitle}>
-              SURVEY MODE
-            </Text>
-          </View>
-
-          {transparencyEnabled ? (
-            <>
-              <Text>Transparency On</Text>
-            </>
-          ) : (
-            <>              <Text>Transparency Off</Text>
-</>
+          {!screenShotMode && (
+            <View
+              style={[styles.themesContainer]}
+              className="flex-row mx-2 my-4 justify-between"
+            >
+              <Text className="my-0 mx-2" style={styles.subTitle}>
+                SURVEY MODE
+              </Text>
+            </View>
           )}
+          {!screenShotMode && (
+            <View>
+              {transparencyEnabled ? (
+                <>
+                  <Text>Transparency On</Text>
+                </>
+              ) : (
+                <>
+                  {" "}
+                  <Text>Transparency Off</Text>
+                </>
+              )}
 
-          {userControlEnabled ? (
-            <>
-              <Text>User Control On</Text>
-            </>
-          ) : (
-            <>              <Text>User Control Off</Text>
-</>
+              {userControlEnabled ? (
+                <>
+                  <Text>User Control On</Text>
+                </>
+              ) : (
+                <>
+                  {" "}
+                  <Text>User Control Off</Text>
+                </>
+              )}
+            </View>
           )}
         </>
       ) : (
@@ -1890,18 +1975,9 @@ export default function FeedScreen({ navigation }) {
             <Text className="my-0 mx-4" style={styles.noPreferencesText}>
               {translations[selectedLanguageCode].newsMustContainAllThemes}
             </Text>
-
           </Animated.View>
         )}
       </View>
-      <Text className="my-2 mx-2 " style={styles.noPreferencesText}>
-        {translations[selectedLanguageCode].found} {newsData.length}{" "}
-        {translations[selectedLanguageCode].articlesIn}{" "}
-        {getLanguageName(selectedLanguageCode)}{" "}
-        {translations[selectedLanguageCode].sinceWhen}
-        {FROM_DATE}
-        {/* {translations[selectedLanguageCode].timeUnit} */}.
-      </Text>
       {selectedThemes.length > 0 && Object.keys(monthlyData).length > 0 && (
         <SafeAreaView style={{ flex: 1, padding: 10 }}>
           {Object.keys(monthlyData).length > 0 ? (
@@ -1948,58 +2024,16 @@ export default function FeedScreen({ navigation }) {
           <Text style={styles.noPreferencesText}>No country selected</Text>
         )}
       </View> */}
-      {isLoading ? ( 
-        localSelectedThemes.length === 0 ? (
-          <View className="flex-col my-2 mx-4">
-            <Text className="my-0 mx-2 " style={styles.subTitle}>
-              {/* <Text className="my-2 mx-2 " style={styles.noPreferencesText}> */}
-              {translations[selectedLanguageCode].noThemesSelected}
-            </Text>
-          </View>
-        ) : (
-          <> 
-            <Loading />
-            <Text
-              className="text-m text-gray-700 dark:text-neutral-400"
-              style={{ textAlign: "center" }}
-            >
-              Loading news feed and computing relevance...{" "}
-            </Text>
-          </> 
-        )
-      ) : (
-        <> 
-          <View
-            className={`flex-col ${
-              colorScheme === "dark" ? "bg-black" : "bg-gray-200"
-            } shadow justify-between px-2`}
-          >
-            <MiniHeader
-              className="bg-blue-200"
-              label={translations[selectedLanguageCode].greeting}
-              explanation={
-                translations[selectedLanguageCode].newsSourceExplanation
-              }
-            />
-            {userControlEnabled && (
-            <View 
-              className="flex-row p-4 my-2 mx-0 rounded-lg bg-white shadow items-center justify-between"
-              
-            >
-              <Text
-                className="my-2"
-                style={[styles.explanationText, { width: "80%" }]}
-              >
-                {translations[selectedLanguageCode].sortByMatch}
-              </Text>
-              <Switch
-                className="my-2 flex-wrap"
-                value={sortByMatch}
-                onChange={toggleSortByMatch}
-              />
-            </View>
-            )}
-            {/* <TouchableOpacity
+      <View
+        className={`flex-col ${
+          colorScheme === "dark" ? "bg-black" : "bg-white-200"
+        } shadow justify-between mb-1`}
+      >
+        <MiniHeader
+          label={translations[selectedLanguageCode].greeting}
+          explanation={translations[selectedLanguageCode].newsSourceExplanation}
+        />
+        {/* <TouchableOpacity
               style={styles.computeButton}
               onPress={handleComputeAllPolarity}
             >
@@ -2007,319 +2041,363 @@ export default function FeedScreen({ navigation }) {
                 Compute Opinion Levels
               </Text>
             </TouchableOpacity> */}
-          </View>
-          {Array.isArray(newsData) && newsData.length > 0 ? (
-            // console.log("LOG NEWS DATA::", JSON.stringify(newsData, null, 2)),
-            <ScrollView>
-              <View
-                style={styles.articlesContainer}
-                className={colorScheme === "dark" ? "bg-black" : "bg-white"}
+        {!isSurveyModeEnabled && ( 
+          <Text className="my-2 mx-2 " style={styles.noPreferencesText}>
+            {translations[selectedLanguageCode].found} {newsData.length}{" "}
+            {translations[selectedLanguageCode].articlesIn}{" "}
+            {getLanguageName(selectedLanguageCode)}{" "}
+            {translations[selectedLanguageCode].sinceWhen}
+            {FROM_DATE}
+            {/* {translations[selectedLanguageCode].timeUnit} */}.
+          </Text>
+        )}
+      </View>
+      {!isLoading && newsData.length > 0 ? (
+        // console.log("LOG NEWS DATA::", JSON.stringify(newsData, null, 2)),
+        <ScrollView>
+          {userControlEnabled && (
+            <View className="flex-row p-2 m-2 mb-2.5 rounded-lg bg-white items-center justify-between shadow">
+              <Text
+                className="mx-4 text-gray-300"
+                style={[styles.explanationText]}
               >
+                {translations[selectedLanguageCode].sortByMatch}
+              </Text>
 
-                {/* NEWS ITEM SECTION */}
-                {newsData.map((article, index) => (
 
-                  <TouchableOpacity
-                    className="mb-4 mx-4 space-y-1 p-2 rounded-md bg-gray-50 shadow-md"
-                    key={index}
-                    onPress={() => handleNewsDetailsClick(article)}
-                  >
-                    <View className="flex-row justify-start w-[100%] p-2">
-                      {article && article.media ? (
-                        <Image
-                          className="rounded"
-                          source={{
-                            uri:
-                              article.media || "https://picsum.photos/200/400",
-                          }}
-                          style={{
-                            width: heightPercentageToDP(9),
-                            height: heightPercentageToDP(10),
-                          }}
-                        />
-                      ) : (
-                        <Text>No Image Available</Text>
-                      )}
-                      <View className="w-[70%] pl-4 justify-center space-y-1">
+              <Switch
+                className="my-1 flex-wrap"
+                value={sortByMatch}
+                onChange={toggleSortByMatch}
+              />
+            </View>
+          )}
+          <View
+            style={styles.articlesContainer}
+            className={colorScheme === "dark" ? "bg-black" : "bg-gray-100"}
+          >
+            {/* NEWS ITEM SECTION */}
+            {newsData.map((article, index) => (
+              <TouchableOpacity
+                className="my-0.5 mx-2 p-1 rounded-lg bg-white shadow"
+                key={index}
+                onPress={() => handleNewsDetailsClick(article)}
+              >
+                <View className="flex-row p-2">
+                  {article && article.media ? (
+                    <Image
+                      className="rounded"
+                      source={{
+                        uri: article.media || "https://picsum.photos/200/400",
+                        // uri: article.media || "https://picsum.photos/200/400",
+                      }}
+                      style={{
+                        width: heightPercentageToDP(8),
+                        height: heightPercentageToDP(8),
+                      }}
+                    />
+                  ) : (
+                    // <Text>No Image Available</Text>
+                    <Image
+                      className="rounded"
+                      source={{
+                        uri: "https://picsum.photos/200/400",
+                      }}
+                      style={{
+                        width: heightPercentageToDP(8),
+                        height: heightPercentageToDP(8),
+                      }}
+                    />
+                  )}
+                  <View className="flex-shrink pl-4 space-y-0">
+                    {!isSurveyModeEnabled && (
+                      <>
                         <Text className="text-xs font-bold text-gray-900 dark:text-neutral-300">
                           {article.topicEngagementScore
                             ? article.topicEngagementScore
-                            : "-"}
-                          {article.tfidfScore ? article.tfidfScore : "/"}
+                            : "Topic: "}
+                          {article.topic
+                            ? article.tfidfScore
+                            : "No Tf-IDF score"}
                         </Text>
                         <Text className="text-xs font-bold text-gray-900 dark:text-neutral-300">
                           {article?.clean_url.length > 20
                             ? article.clean_url.slice(0, 20) + "..."
                             : article.clean_url}
                         </Text>
-                        {article.title && (
-                          <Text
-                            className="text-neutral-800 capitalize max-w-[95%] dark:text-white"
-                            style={{
-                              fontWeight: showSummaries ? "normal" : "bold",
-                              marginTop: 10,
-                            }}
-                          >
-                            {showSummaries
-                              ? article.aiSummary
-                              : article?.title?.length > 80
-                              ? article?.title.slice(0, 150) + "..."
-                              : article?.title}
-                          </Text>
+                      </>
+                    )}
+                    
+                    {article.title && (
+                      <Text
+                        className="text-neutral-800 flex-shrink dark:text-white  min-h-[57px] leading-[19px]"
+                        style={{
+                          fontWeight: showSummaries ? "normal" : "bold",
+                        }}
+                      >
+                        {showSummaries
+                          ? article.aiSummary
+                          : article?.title?.length > 110
+                          ? article?.title.slice(0, 160) + "..."
+                          : article?.title}
+                      </Text>
+                    )}
+                    {article.is_opinion && (
+                      <Text className="text-xs text-blue-500 dark:text-blue-400">
+                        Opinion (rated by AI (NewsCatcher))
+                      </Text>
+                    )}
+                    <Text className="text-xs text-gray-700 dark:text-neutral-400">
+                      {isSurveyModeEnabled && article.published_date}
+
+                      {!isSurveyModeEnabled &&
+                        formatDate(
+                          article.published_date,
+                          article.published_date_precision
                         )}
-                        {article.is_opinion && (
-                          <Text className="text-xs text-blue-500 dark:text-blue-400">
-                            Opinion (rated by AI (NewsCatcher))
+                    </Text>
+
+                    {itemLevelTransparencyEnabled && (
+                      <Text
+                        className="flex-wrap max-w-[100%] text-gray-500 font-bold "
+                        style={styles.explanationText}
+                      >
+                        {
+                          translations[selectedLanguageCode]
+                            .itemLevelExplanationTitle
+                        }{" "}
+                        {article.explanation}
+                      </Text>
+                    )}
+
+                    {!isSurveyModeEnabled && (
+                      <Text style={{ fontSize: 12, color: "#333" }}>
+                        {article.polarizingTechniques}
+                        {
+                          translations[selectedLanguageCode]
+                            .polarizingTechniques
+                        }
+                        {article.polarityScore &&
+                        article.polarityScore !== " " ? (
+                          <Text style={{ fontSize: 12, color: "#333" }}>
+                            {"🧲".repeat(article.polarityScore)}
                           </Text>
+                        ) : (
+                          <Text style={{ fontSize: 12, color: "#333" }}> </Text>
                         )}
-                        <Text className="text-xs text-gray-700 dark:text-neutral-400">
-                          {formatDate(
-                            article.published_date,
-                            article.published_date_precision
-                          )}
-                        </Text>
-                        <Text style={{ fontSize: 12, color: "#333" }}>
-                          {article.polarizingTechniques}
-                          {
-                            translations[selectedLanguageCode]
-                              .polarizingTechniques
-                          }
-                          {article.polarityScore &&
-                          article.polarityScore !== " " ? (
-                            <Text style={{ fontSize: 12, color: "#333" }}>
-                              {"🧲".repeat(article.polarityScore)}
-                            </Text>
-                          ) : (
-                            <Text style={{ fontSize: 12, color: "#333" }}>
-                              {" "}
-                            </Text>
-                          )}
-                        </Text>
-                        {/* <Text style={{ fontSize: 12, color: "#333" }}>
+                      </Text>
+                    )}
+
+                    {/* <Text style={{ fontSize: 12, color: "#333" }}>
                           {article.is_opinion
                             ? "Contains opinion"
                             : "Not rated as opinion"}
                         </Text> */}
-                      </View>
-                      {/* Expandable Section */}
-                      <View
+                  </View>
+                  {/* Expandable Section */}
+                  <View
+                    style={{
+                      position: "absolute",
+                      bottom: 10,
+                      right: 10,
+                    }}
+                  >
+                    <Text>{userControlEnabled}</Text>
+                    {!isSurveyModeEnabled ? (
+                      <TouchableOpacity
+                        onPress={() => handleExpand(index)}
                         style={{
-                          position: "absolute",
-                          bottom: 10,
-                          right: 10,
+                          backgroundColor: "#f0f0f0",
+                          padding: 5,
+                          borderRadius: 4,
                         }}
                       >
-                        <Text>{userControlEnabled}</Text>
-                        {userControlEnabled ? (
-                          <TouchableOpacity
-                            onPress={() => handleExpand(index)}
-                            style={{
-                              backgroundColor: "#f0f0f0",
-                              padding: 5,
-                              borderRadius: 4,
-                            }}
-                          >
-                            <Text style={{ fontSize: 10, color: "#007AFF" }}>
-                              {
-                                translations[selectedLanguageCode]
-                                  .summarizeThisArticle
-                              }
-                            </Text>
-                          </TouchableOpacity>
-                        ) : (
-                          <></>
-                        )}
-                      </View>
-                    </View>
-                    
-
-               
-                    {/* Expanded Content */}
-                    {expandedItem === index && (
-                      <View style={styles.expandableContent}>
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            color: "#555",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          {translations[selectedLanguageCode].summary}
-                          <Text
-                            style={{
-                              fontSize: 12,
-                              color: "#555",
-                              fontWeight: "normal",
-                            }}
-                          >
-                            {" "}
-                            {
-                              translations[selectedLanguageCode].summaryTitle
-                            }: {article.aiSummary || "..."}
-                          </Text>{" "}
-                          {"\n"}
-                        </Text>
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            color: "#555",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          {/* {translations[selectedLanguageCode].polarizingTechniques}:{" "} */}
-                          🧲{" "}
+                        <Text style={{ fontSize: 10, color: "#007AFF" }}>
                           {
                             translations[selectedLanguageCode]
-                              .polarizingTechniques
+                              .summarizeThisArticle
                           }
-                          {article.polarityTechnique || "..."}
-                          {console.log(article.polarityScore)}{" "}
-                          <Text
-                            style={{
-                              fontSize: 12,
-                              color: "#555",
-                              fontWeight: "normal",
-                            }}
-                          ></Text>
-                          {"\n"}
-                          <Text
-                            style={{
-                              fontSize: 12,
-                              color: "#555",
-                              fontWeight: "normal",
-                            }}
-                          >
-                            {translations[selectedLanguageCode].whatIsThis}
-                          </Text>
-                          {/* GPT Opinion: {article.chatgpt_opinion ? "Yes" : "No"} */}
                         </Text>
-                      </View>
+                      </TouchableOpacity>
+                    ) : (
+                      <></>
                     )}
-                  
-                  { isSurveyModeEnabled ? ( null ) : (
-                    <View
-                      className="my-1"
-                      style={[styles.container, { flex: 0.1 }]}
+                  </View>
+                </View>
+
+                {/* Expanded Content */}
+                {expandedItem === index && (
+                  <View style={styles.expandableContent}>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        color: "#555",
+                        fontWeight: "bold",
+                      }}
                     >
-                      {console.log("THE CLICKED TOPICS:", clickedTopics)}
-                      {console.log("THE GROUPED TOPICS:", groupedTopics)}
-                      <View className="flex-col my-4 mx-4">
-                        <Text className="my-2 mx-2 " style={styles.subTitle}>
-                          {translations[selectedLanguageCode].clickedTopics}
+                      {translations[selectedLanguageCode].summary}
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          color: "#555",
+                          fontWeight: "normal",
+                        }}
+                      >
+                        {" "}
+                        {translations[selectedLanguageCode].summaryTitle}:{" "}
+                        {article.aiSummary || "..."}
+                      </Text>{" "}
+                      {"\n"}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        color: "#555",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {/* {translations[selectedLanguageCode].polarizingTechniques}:{" "} */}
+                      🧲{" "}
+                      {translations[selectedLanguageCode].polarizingTechniques}
+                      {article.polarityTechnique || "..."}
+                      {console.log(article.polarityScore)}{" "}
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          color: "#555",
+                          fontWeight: "normal",
+                        }}
+                      ></Text>
+                      {"\n"}
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          color: "#555",
+                          fontWeight: "normal",
+                        }}
+                      >
+                        {translations[selectedLanguageCode].whatIsThis}
+                      </Text>
+                      {/* GPT Opinion: {article.chatgpt_opinion ? "Yes" : "No"} */}
+                    </Text>
+                  </View>
+                )}
+
+                {isSurveyModeEnabled ? null : (
+                  <View
+                    className="my-1"
+                    style={[styles.container, { flex: 0.1 }]}
+                  >
+                    {console.log("THE CLICKED TOPICS:", clickedTopics)}
+                    {console.log("THE GROUPED TOPICS:", groupedTopics)}
+                    <View className="flex-col my-4 mx-4">
+                      <Text className="my-2 mx-2 " style={styles.subTitle}>
+                        {translations[selectedLanguageCode].clickedTopics}
+                      </Text>
+                    </View>
+                    {!safeClickedTopics.length > 0 ? (
+                      <View
+                        style={{
+                          flex: 0.2,
+                          justifyContent: "left",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Text style={{ textAlign: "left", marginTop: 1 }}>
+                          Nothing to see here yet. Start reading!
                         </Text>
                       </View>
-                      {!safeClickedTopics.length > 0 ? (
-                        <View
-                          style={{
-                            flex: 0.2,
-                            justifyContent: "left",
-                            alignItems: "center",
-                          }}
-                        >
-                          <Text style={{ textAlign: "left", marginTop: 1 }}>
-                            Nothing to see here yet. Start reading!
-                          </Text>
-                        </View>
-                      ) : (
-                        <ScrollView
-                          style={{
-                            flex: 0.1, // Take up all available space
-                            position: "relative",
-                          }}
-                          contentContainerStyle={{ paddingBottom: 1 }} // Add padding for smooth scrolling
-                        >
-                          <View style={{ paddingHorizontal: 10 }}>
-                            {Object.keys(groupedTopics).map((topic) => {
-                              if (topic == article.topic) {
-                                // Determine the range of dates to visualize
-                                // Get dynamic start and end dates for the current month
-                                const startDate = new Date();
-                                startDate.setDate(1); // First day of the current month
-                                startDate.setHours(0, 0, 0, 0);
+                    ) : (
+                      <ScrollView
+                        style={{
+                          flex: 0.1, // Take up all available space
+                          position: "relative",
+                        }}
+                        contentContainerStyle={{ paddingBottom: 1 }} // Add padding for smooth scrolling
+                      >
+                        <View style={{ paddingHorizontal: 10 }}>
+                          {Object.keys(groupedTopics).map((topic) => {
+                            if (topic == article.topic) {
+                              // Determine the range of dates to visualize
+                              // Get dynamic start and end dates for the current month
+                              const startDate = new Date();
+                              startDate.setDate(1); // First day of the current month
+                              startDate.setHours(0, 0, 0, 0);
 
-                                const endDate = new Date();
-                                endDate.setMonth(endDate.getMonth() + 1); // Move to next month
-                                endDate.setDate(0); // Last day of the current month
-                                endDate.setHours(23, 59, 59, 999);
-                                const dateRange = [];
-                                for (
-                                  let d = new Date(startDate);
-                                  d <= endDate;
-                                  d.setDate(d.getDate() + 1)
-                                ) {
-                                  dateRange.push(d.toISOString().split("T")[0]);
-                                }
+                              const endDate = new Date();
+                              endDate.setMonth(endDate.getMonth() + 1); // Move to next month
+                              endDate.setDate(0); // Last day of the current month
+                              endDate.setHours(23, 59, 59, 999);
+                              const dateRange = [];
+                              for (
+                                let d = new Date(startDate);
+                                d <= endDate;
+                                d.setDate(d.getDate() + 1)
+                              ) {
+                                dateRange.push(d.toISOString().split("T")[0]);
+                              }
 
-                                return (
-                                  <View key={topic} style={{ marginBottom: 3 }}>
+                              return (
+                                <View key={topic} style={{ marginBottom: 3 }}>
+                                  <Text className="center text-m m-4">
+                                    When you read about{" "}
                                     <Text
                                       style={{
+                                        marginBottom: 5,
                                         textAlign: "center",
-                                        fontSize: 16,
-                                        marginVertical: 2,
+                                        fontWeight: "bold",
                                       }}
                                     >
-                                      When you read about{" "}
-                                      <Text
-                                        style={{
-                                          marginBottom: 5,
-                                          textAlign: "center",
-                                          fontWeight: "bold",
-                                        }}
-                                      >
-                                        {topic}
-                                      </Text>{" "}
-                                      in {getCurrentMonth()}:
-                                    </Text>
-                                    <Svg
-                                      height="40"
-                                      width={dateRange.length * 10}
-                                      style={{ alignSelf: "center" }}
-                                    >
-                                      {dateRange.map((date, index) => {
-                                        const isClicked =
-                                          groupedTopics[topic][date]; // Check if this topic was clicked on this date
-                                        return (
-                                          <Rect
-                                            key={`${topic}-${date}`}
-                                            x={index * 10} // Space between squares
-                                            y={10} // Center vertically
-                                            width={10}
-                                            height={10}
-                                            fill={isClicked ? "black" : "white"}
-                                            stroke="gray" // Add a border for better visibility
-                                            strokeWidth={1}
-                                          />
-                                        );
-                                      })}
-                                    </Svg>
-                                  </View>
-                                );
-                              }
-                            })}
-                          </View>
-                        </ScrollView>
-                      )}
-                    </View>
-                   ) } 
-
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-          ) : (
-            <>
-              <View style={styles.articlesContainer}>
-                <Loading />
-                <Text
-                  className="text-m text-gray-700 dark:text-neutral-400"
-                  style={{ textAlign: "center" }}
-                >
-                  {translations[selectedLanguageCode].loadingNewsFeed}
-                </Text>
-              </View>
-            </>
-          )}
+                                      {topic}
+                                    </Text>{" "}
+                                    in {getCurrentMonth()}:
+                                  </Text>
+                                  <Svg
+                                    height="40"
+                                    width={dateRange.length * 10}
+                                    style={{ alignSelf: "center" }}
+                                  >
+                                    {dateRange.map((date, index) => {
+                                      const isClicked =
+                                        groupedTopics[topic][date]; // Check if this topic was clicked on this date
+                                      return (
+                                        <Rect
+                                          key={`${topic}-${date}`}
+                                          x={index * 10} // Space between squares
+                                          y={10} // Center vertically
+                                          width={10}
+                                          height={10}
+                                          fill={isClicked ? "black" : "white"}
+                                          stroke="gray" // Add a border for better visibility
+                                          strokeWidth={1}
+                                        />
+                                      );
+                                    })}
+                                  </Svg>
+                                </View>
+                              );
+                            }
+                          })}
+                        </View>
+                      </ScrollView>
+                    )}
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      ) : (
+        <>
+          <View style={styles.articlesContainer}>
+            <Loading />
+            <Text
+              className="text-m text-gray-700 dark:text-neutral-400"
+              style={{ textAlign: "center" }}
+            >
+              {translations[selectedLanguageCode].loadingNewsFeed}
+            </Text>
+          </View>
         </>
       )}
     </SafeAreaView>

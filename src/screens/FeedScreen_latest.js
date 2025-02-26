@@ -1529,9 +1529,11 @@ export default function FeedScreen({ navigation }) {
   }, [showSummaries]);
 
   const [fontsLoaded, fontError] = useFonts({
-    SpaceGroteskMedium: require("../fonts/SpaceGrotesk-Medium.ttf"),
-    SpaceGroteskSemibold: require("../fonts/SpaceGrotesk-SemiBold.ttf"),
-    SpaceGroteskBold: require("../fonts/SpaceGrotesk-Bold.ttf"),
+    RobotoMedium: require("../fonts/RobotoFont/static/Roboto-Medium.ttf"),
+
+    RobotoSemibold: require("../fonts/RobotoFont/static/Roboto-SemiBold.ttf"),
+
+    RobotoBold: require("../fonts/RobotoFont/static/Roboto-Bold.ttf"),
   });
 
   // when fonts change or font error occurs

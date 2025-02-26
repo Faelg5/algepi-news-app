@@ -22,47 +22,80 @@ export default function MiniHeader({
     console.log("Survey Mode Enabled:", isSurveyModeEnabled);
   }, [isSurveyModeEnabled]);
 
-
   const { transparencyEnabled } = useContext(UserPreferencesContext);
   useEffect(() => {
     console.log("Transparency Enabled:", transparencyEnabled);
   }, [transparencyEnabled]);
 
+  const { itemLevelTransparencyEnabled } = useContext(UserPreferencesContext);
+  useEffect(() => {
+    console.log(
+      "Item-Level Transparency Enabled:",
+      itemLevelTransparencyEnabled
+    );
+  }, [itemLevelTransparencyEnabled]);
 
   // console.log(fillColor)
 
   return (
     <View
-      className="flex-col max-w-[100%] shadow-md"
+      className="flex-col rounded-md max-w-[100%]"
       style={styles.headerContainer}
     >
-      <View className="flex-wrap bg-red-60">
-        <View className="flex-row">
-          <Text style={styles.headerText}>{label}</Text>
+      <View className="flex-col w-full">
+        <View className="flex-col w-full rounded-md">
+          <View className="w-full">
+            {/* Row for title and button */}
+            <View className="flex-row items-center">
+              <Text
+                className="flex-shrink pt-4 pb-2 px-6"
+                style={styles.headerText}
+              >
+                {label}
+              </Text>
 
-          {transparencyEnabled && (
-            <TouchableOpacity
-              className="flex-col text-justify"
-              onPress={handlePress}
-              style={[
-                styles.infoButton,
-                showExplanation && styles.infoButtonActive,
-              ]}
-            >
-              <Text style={styles.infoButtonText}>i</Text>
-            </TouchableOpacity>
-          )}
+              {transparencyEnabled && !isSurveyModeEnabled && (
+                <TouchableOpacity
+                  className="flex-col text-justify p-2"
+                  onPress={handlePress}
+                  style={[
+                    styles.infoButton,
+                    showExplanation && styles.infoButtonActive,
+                  ]}
+                >
+                  <Text style={styles.infoButtonText}>i</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {!transparencyEnabled && !itemLevelTransparencyEnabled && (
+              <View className="h-[2px] bg-blue w-full my-2 mb-3" />
+            )}
+            {/* Horizontal Line BELOW */}
+            <View className="h-[1px] bg-gray-300 w-full my-4 mb-5" />
+
+            {!transparencyEnabled && !itemLevelTransparencyEnabled && (
+              <View className="h-[10px] bg-blue w-full my-4 mb-5" />
+            )}
+          </View>
         </View>
         {transparencyEnabled && (
-        <Text className="flex-wrap max-w-[100%]" style={styles.explanationText}>
-          {explanation}
-        </Text>
+          <Text
+            className="flex-wrap w-full px-4 py-2 text-gray-700 "
+            style={styles.explanationText}
+          >
+            {explanation}
+          </Text>
         )}
       </View>
 
       {showExplanation && (
-        <View style={[styles.bubble, styles.shadow]}>
-          <Text style={styles.explanationText}>{explanation}</Text>
+        <View style={[styles.bubble]}>
+          <Text
+            className="text-base p-4 bg-red-500"
+            style={styles.explanationText}
+          >
+            {explanation}
+          </Text>
 
           {/* {includeVis && (
             <Svg height="20" width="20">
@@ -83,15 +116,12 @@ export default function MiniHeader({
 const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: "row",
-    paddingHorizontal: 10,
-    marginVertical: 10,
     position: "relative", // Ensure relative positioning for absolute child (bubble)
-    padding: 10,
   },
   headerText: {
-    fontSize: 20,
+    fontSize: 26,
     color: "#000",
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Roboto-Bold",
   },
   infoButton: {
     width: 20,
@@ -109,7 +139,7 @@ const styles = StyleSheet.create({
   infoButtonText: {
     fontSize: 14,
     color: "#fff",
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Roboto-Bold",
   },
   bubble: {
     backgroundColor: "rgba(255, 255, 255, 1)",
@@ -141,10 +171,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   explanationText: {
-    fontFamily: "Helvetica",
-    color: "#000",
+    fontFamily: "Roboto",
     textAlign: "left",
-    lineHeight: 14,
     zIndex: 1000, // Lower zIndex to ensure it's below the "i" button
+    // maxWidth: "94%",
   },
 });

@@ -1,4 +1,4 @@
-import React from "react";
+import {React, useContext} from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -7,6 +7,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import AskGPTScreen from "../screens/AskGPTScreen";
 import { ColorList } from "../constants/colors";
 import { UserPreferencesContext } from "../../App"; // Import context
+import translations from "../constants/translations"; // Import translations
 
 import AIGuideScreen from "../screens/AIGuideScreen";
 import FeedScreenXAI from "../screens/FeedScreenXAI";
@@ -31,8 +32,14 @@ const Stack = createNativeStackNavigator();
 
 const SwipeStack = createNativeStackNavigator(); // Utilisez le Native Stack Navigator
 
+
+
 export default function AppNavigation() {
   const { colorScheme, toggleColorScheme } = useColorScheme();
+  const { selectedThemes, selectedCountry, selectedLanguageCode } = useContext(
+    UserPreferencesContext
+  ); // Use context to get user preferences
+  const profileName = translations[selectedLanguageCode]?.profileName || "Profile";
 
   const TabNavigator = () => {
     return (
@@ -46,7 +53,7 @@ export default function AppNavigation() {
               iconName = focused ? "book" : "book-outline";
             }
             if (route.name === "Explorer" || route.name === "Feed") {
-              iconName = focused ? "compass" : "compass-outline";
+              iconName = focused ? "home" : "home-outline";
             }
             //  else if (route.name === 'Advice') {
             //     iconName = focused ? 'chatbubble-ellipses-sharp' : 'chatbubble-ellipses-outline';
@@ -63,7 +70,7 @@ export default function AppNavigation() {
               iconName = focused
                 ? "chatbubble-ellipses-sharp"
                 : "chatbubble-ellipses-outline";
-            } else if (route.name === "Profile") {
+            } else if (route.name === "Profile" || route.name === "Profiel" || route.name === "Profil") {
               iconName = focused ? "person-sharp" : "person-outline";
             }
             const customSize = 24;
@@ -72,11 +79,11 @@ export default function AppNavigation() {
               <Ionicons
                 name={iconName}
                 size={customSize}
-                color={focused ? ColorList.primary : "gray"}
+                color={focused ? "black": "gray"}
               />
             );
           },
-          tabBarActiveTintColor: ColorList.primary,
+          tabBarActiveTintColor: "black",
           tabBarInactiveTintColor: "gray",
           tabBarLabelStyle: {
             fontSize: 12,
@@ -91,11 +98,10 @@ export default function AppNavigation() {
         {isSurveyModeEnabled ? (
           <>
             <Tab.Screen name="Feed" component={FeedScreen} />
-            <Tab.Screen name="Profile" component={PreferencesScreen} />
           </>
         ) : (
           <>
-                  <Tab.Screen name="Explorer" component={FeedScreen} />
+            <Tab.Screen name="Explorer" component={FeedScreen} />
 
             <Tab.Screen name="Storyteller" component={FeedScreen} />
 
@@ -103,6 +109,8 @@ export default function AppNavigation() {
             {/* <Tab.Screen name="Ask GPT" component={AskGPTScreen} /> */}
           </>
         )}
+
+        <Tab.Screen name={profileName} component={PreferencesScreen} />
       </Tab.Navigator>
     );
   };
@@ -124,7 +132,7 @@ export default function AppNavigation() {
           <>
             <Stack.Screen name="Debriefo" component={SummariesScreen} />
             <Stack.Screen name="Ask GPT" component={AskGPTScreen} />
-            <Stack.Screen name="Profile" component={PreferencesScreen} />
+            <Stack.Screen name={profileName} component={PreferencesScreen} />
           </>
         )}
 

@@ -172,7 +172,6 @@ export default StyleSheet.create({
     fontFamily: "Helvetica",
     color: "#000",
     textAlign: "left",
-    lineHeight: 14,
     zIndex: 1000, // Lower zIndex to ensure it's below the "i" button
   },
   preferencesContainer: {

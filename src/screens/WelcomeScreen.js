@@ -8,9 +8,11 @@ import { useFonts } from "expo-font";
 export default function WelcomeScreen() {
   const navigation = useNavigation();
   const [fontsLoaded, fontError] = useFonts({
-    SpaceGroteskMedium: require("../fonts/SpaceGrotesk-Medium.ttf"),
-    SpaceGroteskSemibold: require("../fonts/SpaceGrotesk-SemiBold.ttf"),
-    SpaceGroteskBold: require("../fonts/SpaceGrotesk-Bold.ttf"),
+    RobotoMedium: require("../fonts/RobotoFont/static/Roboto-Medium.ttf"),
+
+    RobotoSemibold: require("../fonts/RobotoFont/static/Roboto-SemiBold.ttf"),
+
+    RobotoBold: require("../fonts/RobotoFont/static/Roboto-Bold.ttf"),
   });
   return (
     <ImageBackground
@@ -34,7 +36,7 @@ export default function WelcomeScreen() {
           className="font-bold text-4xl shadow-2xl text-white text-center tracking-wider"
           style={{
             fontSize: wp(10),
-            fontFamily: "Helvetica",
+            fontFamily: "Roboto",
           }}
         >
           InforMate
@@ -44,7 +46,7 @@ export default function WelcomeScreen() {
           className="text-white text-center max-w-[85%] leading-12 tracking-wider"
           style={{
             fontSize: wp(4),
-            fontFamily: "Helvetica",
+            fontFamily: "Roboto",
             fontWeight: "normal",
           }}
         >
@@ -59,7 +61,7 @@ Stay informed, entertained, and inspired—your way.
           className="font-bold text-4xl shadow-2xl text-white text-center tracking-wider"
           style={{
             fontSize: wp(6),
-            fontFamily: "Helvetica",
+            fontFamily: "Roboto",
           }}
         >
           Consent notice:
@@ -68,7 +70,7 @@ Stay informed, entertained, and inspired—your way.
           className="text-white text-center max-w-[85%] leading-12 tracking-wider"
           style={{
             fontSize: wp(4),
-            fontFamily: "Helvetica",
+            fontFamily: "Roboto",
             fontWeight: "bold",
           }}
         >
@@ -85,7 +87,7 @@ Stay informed, entertained, and inspired—your way.
           className="text-white text-center font-bold tracking-wider"
           style={{
             fontSize: wp(5),
-            fontFamily: "Helvetica",
+            fontFamily: "Roboto",
           }}
         >
           Agree
