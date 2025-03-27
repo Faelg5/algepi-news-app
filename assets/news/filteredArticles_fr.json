@@ -1,62 +1,62 @@
 [
   {
-    "title": "Wereldleiders ontmoeten elkaar voor defensietop. Dit zijn de belangrijkste agendapunten",
-    "author": "De Morgen",
-    "published_date": "Gisteren, 14:26",
+    "title": "Les dirigeants du monde entier se réunissent pour un sommet sur la défense. Voici les principaux sujets à l'ordre du jour",
+    "author": "Le Monde",
+    "published_date": "Hier, 14:26",
     "link": "https://example.com/news/defense-summit",
     "clean_url": "example.com",
     "excerpt": "",
     "summary": "Global leaders gathered to address current defense challenges and future strategies.",
     "topic": "International Politics",
     "media": "https://i.ibb.co/ycTZXmBk/nl-1.jpg",
-    "explanation": "Belangrijke nieuwsgebeurtenis"
+    "explanation": "Événement d'actualité majeur"
   },
   {
-    "title": "Autoriteiten onthullen nieuw beleid om misdaadpreventie te versterken",
-    "author": "VRT NWS",
-    "published_date": "Vandaag, 08:45",
+    "title": "Les autorités présentent de nouvelles mesures pour renforcer la prévention de la criminalité",
+    "author": "France Info",
+    "published_date": "Aujourd’hui, 08:45",
     "link": "https://example.com/news/crime-policy-update",
     "clean_url": "example.com",
     "excerpt": "",
     "summary": "Authorities announced stronger crime prevention measures to protect communities.",
     "topic": "Public Safety",
     "media": "https://i.ibb.co/VWkWVK6T/nl-2.jpg",
-    "explanation": "Veel gelezen in uw omgeving"
+    "explanation": "Souvent lu dans votre région"
   },
   {
-    "title": "Smartphoneverbod op scholen groot succes: “Leerlingen hebben weer oog voor elkaar”",
-    "author": "HLN",
-    "published_date": "Vandaag, 07:36",
+    "title": "L'interdiction des smartphones dans les écoles fait des émules : « Les élèves font à nouveau attention les uns aux autres ».",
+    "author": "Libération",
+    "published_date": "Aujourd’hui, 07:36",
     "link": "https://example.com/news/school-smartphone-ban",
     "clean_url": "example.com",
     "excerpt": "",
     "summary": "The smartphone ban in schools encourages students to interact more face-to-face.",
     "topic": "Education",
     "media": "https://i.ibb.co/TD9P66sb/nl-3.jpg",
-    "explanation": "Past binnen uw voorkeuren"
+    "explanation": "D'après vos préférences"
   },
   {
-    "title": "Prachtige doelpunten en dramatische comebacks bepalen wedstrijd boordevol spanning",
-    "author": "Sporza",
-    "published_date": "Gisteren, 19:56",
+    "title": "Des buts étonnants et des retours spectaculaires pour un match de foot riche en émotions",
+    "author": "L'Équipe",
+    "published_date": "Hier, 19:56",
     "link": "https://example.com/news/football-drama",
     "clean_url": "example.com",
     "excerpt": "",
     "summary": "A thrilling football match featured unforgettable goals and shocking comebacks.",
     "topic": "Sports",
     "media": "https://i.ibb.co/bgCr4K5z/nl-4.jpg",
-    "explanation": "Omdat u gelijkaardige artikels las"
+    "explanation": "Parce que vous avez lu des articles similaires"
   },
   {
-    "title": "Deze films gaan dit jaar met de meeste prijzen lopen",
-    "author": "De Standaard",
-    "published_date": "Vandaag, 09:32",
+    "title": "Ces films ont remporté le plus grand nombre de prix cette année",
+    "author": "Télérama",
+    "published_date": "Aujourd’hui, 09:32",
     "link": "https://example.com/news/film-awards",
     "clean_url": "example.com",
     "excerpt": "",
     "summary": "This year’s top films swept the awards season with multiple honors.",
     "topic": "Entertainment",
     "media": "https://i.ibb.co/DDn5K0xJ/nl-5.png",
-    "explanation": "Past binnen de voorkeuren van gebruikers als u"
+    "explanation": "D'après les préférences d'utilisateur·trice·s similaires"
   }
 ]

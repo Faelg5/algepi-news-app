@@ -173,6 +173,7 @@ export default StyleSheet.create({
     color: "#000",
     textAlign: "left",
     zIndex: 1000, // Lower zIndex to ensure it's below the "i" button
+    fontSize: 12,
   },
   preferencesContainer: {
     backgroundColor: ColorList.backgroundPrimary,
