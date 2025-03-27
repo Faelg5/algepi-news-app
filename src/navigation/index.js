@@ -44,7 +44,7 @@ export default function AppNavigation() {
   const TabNavigator = () => {
     return (
       <Tab.Navigator
-        initialRouteName="Feed" // Set initial route name here
+        initialRouteName="Fil" // Set initial route name here
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarIcon: ({ focused }) => {
@@ -52,7 +52,7 @@ export default function AppNavigation() {
             if (route.name === "Storyteller") {
               iconName = focused ? "book" : "book-outline";
             }
-            if (route.name === "Explorer" || route.name === "Feed") {
+            if (route.name === "Explorer" || route.name === "Fil") {
               iconName = focused ? "home" : "home-outline";
             }
             //  else if (route.name === 'Advice') {
@@ -97,7 +97,7 @@ export default function AppNavigation() {
         {/* <Tab.Screen name="Advice" component={AIGuideScreen} /> */}
         {isSurveyModeEnabled ? (
           <>
-            <Tab.Screen name="Feed" component={FeedScreen} />
+            <Tab.Screen name="Fil" component={FeedScreen} />
           </>
         ) : (
           <>

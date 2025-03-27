@@ -48,7 +48,7 @@ export default function MiniHeader({
             {/* Row for title and button */}
             <View className="flex-row items-center">
               <Text
-                className="flex-shrink pt-4 pb-2 px-6"
+                className="flex-shrink pt-1 pb-0 px-6"
                 style={styles.headerText}
               >
                 {label}
@@ -68,19 +68,19 @@ export default function MiniHeader({
               )}
             </View>
             {!transparencyEnabled && !itemLevelTransparencyEnabled && (
-              <View className="h-[2px] bg-blue w-full my-2 mb-3" />
+              <View className="h-[2px] bg-blue w-full my-0 mb-2" />
             )}
             {/* Horizontal Line BELOW */}
-            <View className="h-[1px] bg-gray-300 w-full my-4 mb-5" />
+            <View className="h-[1px] bg-gray-300 w-full my-4 mb-2" />
 
             {!transparencyEnabled && !itemLevelTransparencyEnabled && (
-              <View className="h-[10px] bg-blue w-full my-4 mb-5" />
+              <View className="h-[10px] bg-blue w-full my-4 mb-2" />
             )}
           </View>
         </View>
         {transparencyEnabled && (
           <Text
-            className="flex-wrap w-full px-4 py-2 text-gray-700 "
+            className="flex-wrap w-full px-4 py-0 text-gray-700 "
             style={styles.explanationText}
           >
             {explanation}

@@ -74,6 +74,11 @@ import * as d3 from "d3";
 
 import DotGrid from "../../utils/DotGrid";
 
+import filteredArticlesNL from "../../assets/news/filteredArticles_nl.json";
+import filteredArticlesFR from "../../assets/news/filteredArticles_fr.json";
+import filteredArticlesEN from "../../assets/news/filteredArticles_en.json";
+import filteredArticlesDE from "../../assets/news/filteredArticles_de.json";
+
 const topics = ["Technology", "Finance", "Health", "Entertainment", "Sports"];
 
 const CHATGPT_API_URL = "https://api.openai.com/v1/chat/completions";
@@ -619,33 +624,52 @@ export default function FeedScreen({ navigation }) {
   const groupedTopics = processClickedTopics(clickedTopics);
 
   const loadSavedArticles = async () => {
-    // if (language == "nl") {
-    //   // load dutch articles
-    console.log("loading dutch articles from local file...");
-    const fileUri = FileSystem.documentDirectory + "filteredArticles_nl.json";
-    // } else {
-    //   // load standard french articles
-    //   const fileUri = FileSystem.documentDirectory + "filteredArticles.json";
-    // }
-
+    console.log("📂 Loading saved articles...");
+  
     try {
-      console.log("📂 Lecture du fichier des articles sauvegardés...");
-      const fileContent = await FileSystem.readAsStringAsync(fileUri);
-      const parsedData = JSON.parse(fileContent);
+      let parsedData = [];
 
-      console.log(
-        "✅ Articles chargés depuis le fichier :",
-        parsedData.length,
-        "articles"
-      );
-
+      if (currentLanguageCode === "nl") {
+        console.log("🇳🇱 Loading Dutch articles from `assets/`...");
+        parsedData = Array.isArray(filteredArticlesNL)
+          ? filteredArticlesNL
+          : filteredArticlesNL.articles || [];
+        console.log("✅ Dutch Articles loaded:", parsedData.length);
+      
+      } else if (currentLanguageCode === "fr") {
+        console.log("🇫🇷 Loading French articles from `assets/`...");
+        parsedData = Array.isArray(filteredArticlesFR)
+          ? filteredArticlesFR
+          : filteredArticlesFR.articles || [];
+        console.log("✅ French Articles loaded:", parsedData.length);
+      
+      } else if (currentLanguageCode === "de") {
+        console.log("🇩🇪 Loading German articles from `assets/`...");
+        parsedData = Array.isArray(filteredArticlesDE)
+          ? filteredArticlesDE
+          : filteredArticlesDE.articles || [];
+        console.log("✅ German Articles loaded:", parsedData.length);
+      
+      } else if (currentLanguageCode === "en") {
+        console.log("🇬🇧 Loading English articles from `assets/`...");
+        parsedData = Array.isArray(filteredArticlesEN)
+          ? filteredArticlesEN
+          : filteredArticlesEN.articles || [];
+        console.log("✅ English Articles loaded:", parsedData.length);
+      
+      } else {
+        console.warn("🌐 Unsupported language code:", currentLanguageCode);
+        parsedData = [];
+      }
+      
+      // Final assignment to state
       setNewsData(parsedData);
       setUnsortedNewsData(parsedData);
       setIsLoading(false);
     } catch (error) {
-      console.error("❌ Erreur de lecture du fichier :", error);
+      console.error("❌ Error loading articles:", error);
     } finally {
-      setIsLoading(false); // S'assurer que le loading est désactivé même en cas d'erreur
+      setIsLoading(false);
     }
   };
 
@@ -876,7 +900,7 @@ export default function FeedScreen({ navigation }) {
   );
 
   const [andOperator, setAndOperator] = useState(false);
-  const [sortByMatch, setSortByMatch] = useState(true);
+  const [sortByMatch, setSortByMatch] = useState(false);
 
   const [htmlContent, setHtmlContent] = useState("");
 
@@ -1551,7 +1575,7 @@ export default function FeedScreen({ navigation }) {
     }
 
     if (sortByMatch) {
-      console.log("Sorting by match");
+      console.log("NEW SORT! Sorting by match");
       handleSortByMatch();
     } else {
       console.log("Resetting to default sort order (sortByMatch)");
@@ -1730,7 +1754,7 @@ export default function FeedScreen({ navigation }) {
         return;
       }
 
-      setIsLoading(true); // Active le loading uniquement si on n'a pas encore chargé les articles
+      setIsLoading(false); // Active le loading uniquement si on n'a pas encore chargé les articles
 
       loadSavedArticles();
     }
@@ -1887,7 +1911,7 @@ export default function FeedScreen({ navigation }) {
   const tfidf = useRef(new TfIdf()); // Preserved across renders
 
   return (
-    <SafeAreaView className="my-10" style={styles.container}>
+    <SafeAreaView className="my-0" style={styles.container}>
       // If survey Mode enabled, hide top elements
       {isSurveyModeEnabled ? (
         <>
@@ -2053,12 +2077,12 @@ export default function FeedScreen({ navigation }) {
         )}
       </View>
       {!isLoading && newsData.length > 0 ? (
-        // console.log("LOG NEWS DATA::", JSON.stringify(newsData, null, 2)),
+        console.log("LOG NEWS DATA::", JSON.stringify(newsData, null, 2)),
         <ScrollView>
           {userControlEnabled && (
-            <View className="flex-row p-2 m-2 mb-2.5 rounded-lg bg-white items-center justify-between shadow">
+            <View className="flex-row p-2 pr-3 m-2 mb-2 rounded-lg bg-white items-center justify-between shadow max-w-[98%]">
               <Text
-                className="mx-4 text-gray-300"
+                className="mx-0 ml-2 text-gray-300 max-w-[80%]"
                 style={[styles.explanationText]}
               >
                 {translations[selectedLanguageCode].sortByMatch}
@@ -2083,7 +2107,7 @@ export default function FeedScreen({ navigation }) {
                 key={index}
                 onPress={() => handleNewsDetailsClick(article)}
               >
-                <View className="flex-row p-2">
+                <View className="flex-row p-0.5">
                   {article && article.media ? (
                     <Image
                       className="rounded"
@@ -2109,7 +2133,7 @@ export default function FeedScreen({ navigation }) {
                       }}
                     />
                   )}
-                  <View className="flex-shrink pl-4 space-y-0">
+                  <View className="w-auto pl-4 space-y-0.2">
                     {!isSurveyModeEnabled && (
                       <>
                         <Text className="text-xs font-bold text-gray-900 dark:text-neutral-300">
@@ -2130,15 +2154,16 @@ export default function FeedScreen({ navigation }) {
                     
                     {article.title && (
                       <Text
-                        className="text-neutral-800 flex-shrink dark:text-white  min-h-[57px] leading-[19px]"
+                        className="text-neutral-800 flex-shrink dark:text-white  min-h-[50px] leading-[19px]"
                         style={{
                           fontWeight: showSummaries ? "normal" : "bold",
+                          maxWidth: "83%",
                         }}
                       >
                         {showSummaries
                           ? article.aiSummary
-                          : article?.title?.length > 110
-                          ? article?.title.slice(0, 160) + "..."
+                          : article?.title?.length > 160
+                          ? article?.title.slice(0, 180) + "..."
                           : article?.title}
                       </Text>
                     )}
@@ -2158,16 +2183,22 @@ export default function FeedScreen({ navigation }) {
                     </Text>
 
                     {itemLevelTransparencyEnabled && (
-                      <Text
-                        className="flex-wrap max-w-[100%] text-gray-500 font-bold "
-                        style={styles.explanationText}
-                      >
-                        {
-                          translations[selectedLanguageCode]
-                            .itemLevelExplanationTitle
-                        }{" "}
-                        {article.explanation}
-                      </Text>
+                   <View style={{ maxWidth: "95%", flexWrap: 'wrap' }}>
+                   <Text style={{ fontSize: 12, color: "#000", fontFamily: "Helvetica", fontWeight: "bold" }}>
+                     {translations[selectedLanguageCode].itemLevelExplanationTitle}
+                   </Text>
+                   <Text
+                     style={{
+                       fontSize: 12,
+                       color: "#000",
+                       fontFamily: "Helvetica",
+                       flexShrink: 1,
+                       flexWrap: 'wrap',
+                     }}
+                   >
+                     {" "}{article.explanation}
+                   </Text>
+                 </View>
                     )}
 
                     {!isSurveyModeEnabled && (
