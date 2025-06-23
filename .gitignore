@@ -36,3 +36,8 @@ yarn-error.*
 algepi-news-service-account-key.json
 algepi-news-service-account-key.json
 # utils/ApiKey.js
+
+
+.env
+.env.local
+.env.production
