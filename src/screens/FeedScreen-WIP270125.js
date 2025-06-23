@@ -26,7 +26,7 @@ import {
   fetchAllNewsNA,
   fetchRecommendedNews,
   fetchTNA,
-  fetchNCA,
+  // fetchNCA,
 } from "../../utils/NewsApi";
 import Header from "../components/Header";
 import Loading from "../components/Loading";
@@ -628,7 +628,7 @@ export default function FeedScreen({ navigation }) {
 
   const loadSavedArticles = async () => {
     console.log("📂 Loading saved articles...");
-  
+
     try {
       let parsedData = [];
 
@@ -638,42 +638,35 @@ export default function FeedScreen({ navigation }) {
           ? filteredArticlesNL
           : filteredArticlesNL.articles || [];
         console.log("✅ Dutch Articles loaded:", parsedData.length);
-      
       } else if (currentLanguageCode === "fr") {
         console.log("🇫🇷 Loading French articles from `assets/`...");
         parsedData = Array.isArray(filteredArticlesFR)
           ? filteredArticlesFR
           : filteredArticlesFR.articles || [];
         console.log("✅ French Articles loaded:", parsedData.length);
-      
       } else if (currentLanguageCode === "de") {
         console.log("🇩🇪 Loading German articles from `assets/`...");
         parsedData = Array.isArray(filteredArticlesDE)
           ? filteredArticlesDE
           : filteredArticlesDE.articles || [];
         console.log("✅ German Articles loaded:", parsedData.length);
-      
       } else if (currentLanguageCode === "en") {
         console.log("🇬🇧 Loading English articles from `assets/`...");
         parsedData = Array.isArray(filteredArticlesEN)
           ? filteredArticlesEN
           : filteredArticlesEN.articles || [];
         console.log("✅ English Articles loaded:", parsedData.length);
-      
       } else if (currentLanguageCode === "it") {
         console.log(" Loading Backup articles from `assets/`...");
         parsedData = Array.isArray(fallbackArticles)
           ? fallbackArticles
           : fallbackArticles.articles || [];
         console.log("✅ FALLBACK Articles loaded:", parsedData.length);
-      
-      }
-      
-      else {
+      } else {
         console.warn("🌐 Unsupported language code:", currentLanguageCode);
         parsedData = [];
       }
-      
+
       // Final assignment to state
       setNewsData(parsedData);
       setUnsortedNewsData(parsedData);
@@ -685,21 +678,19 @@ export default function FeedScreen({ navigation }) {
     }
   };
 
-
-
   // For Demo Mode - load a fixed list of Fallback articles
   const loadSavedDemoArticles = async () => {
     console.log("📂 Loading saved articles...");
-  
+
     try {
       let parsedData = [];
 
-        console.log(" Loading Backup articles from `assets/`...");
-        parsedData = Array.isArray(fallbackArticles)
-          ? fallbackArticles
-          : fallbackArticles.articles || [];
-        console.log("✅ FALLBACK Articles loaded:", parsedData.length);
-      
+      console.log(" Loading Backup articles from `assets/`...");
+      parsedData = Array.isArray(fallbackArticles)
+        ? fallbackArticles
+        : fallbackArticles.articles || [];
+      console.log("✅ FALLBACK Articles loaded:", parsedData.length);
+
       // Final assignment to state
       setNewsData(parsedData);
       setUnsortedNewsData(parsedData);
@@ -887,21 +878,21 @@ export default function FeedScreen({ navigation }) {
     }
   };
 
-  // for aptabase
-  const [count, setCount] = useState(0);
+// for aptabase
+const [count, setCount] = useState(0);
 
-  // To check if the component has mounted
-  const hasMounted = useRef(false);
+// To check if the component has mounted
+const hasMounted = useRef(false);
 
-  const incrementNewsItemClick = () => {
-    setCount(count + 1);
-    trackEvent("newsItemClick", { count });
-  };
+const incrementNewsItemClick = () => {
+  setCount(count + 1);
+  trackEvent("newsItemClick", { count });
+};
 
-  const decrement = () => {
-    setCount(count - 1);
-    trackEvent("decrement", { count });
-  };
+const decrement = () => {
+  setCount(count - 1);
+  trackEvent("decrement", { count });
+};
 
   ////////////////////////////
   const { colorScheme, toggleColorScheme } = useColorScheme();
@@ -911,7 +902,7 @@ export default function FeedScreen({ navigation }) {
   ); // Use context to get user preferences
 
   // Dynamic source selection - update this variable if API change is required
-  const [source, setSource] = useState("newsCatcherApi");
+  const [source, setSource] = useState("newsApi");
 
   const [unsortedNewsData, setUnsortedNewsData] = useState([]);
   const [newsData, setNewsData] = useState([]);
@@ -969,122 +960,127 @@ export default function FeedScreen({ navigation }) {
   var currentCountryName;
   var currentLanguageName;
 
-  const fetchNews = async (calledFrom) => {
-    let queryOperator = andOperator ? " AND " : " OR ";
+const fetchNews = async (calledFrom) => {
+  let queryOperator = andOperator ? " AND " : " OR ";
 
-    // Vérification de `localSelectedThemes`
-    if (
-      !Array.isArray(localSelectedThemes) ||
-      localSelectedThemes.length === 0
-    ) {
-      console.warn("No themes selected. Cannot fetch news.");
-      setNewsData([]); // Réinitialise les données
-      setIsLoading(false);
-      return;
+  // Vérification de `localSelectedThemes`
+  if (
+    !Array.isArray(localSelectedThemes) ||
+    localSelectedThemes.length === 0
+  ) {
+    console.warn("No themes selected. Cannot fetch news.");
+    setNewsData([]); // Réinitialise les données
+    setIsLoading(false);
+    return;
+  }
+
+  // Reset the tfidf instance at the beginning of fetching news process
+  tfidf.current = new TfIdf();
+
+  console.log("fetching news, called from: " + calledFrom);
+  console.log("fetching news with these themes...", localSelectedThemes);
+  if (!isSurveyModeEnabled) {
+    setIsLoading(true);
+  }
+
+  let articles = [];
+  let page = 1;
+  let totalPages = 1; // Placeholder for total pages, updated after the first response
+
+  let response;
+  console.log("using source: " + source);
+  const langCode = selectedLanguageCode || currentLanguageCode || "en";
+  if (source === "newsApi") {
+    let queryOperator = " OR ";
+    if (andOperator) {
+      queryOperator = " AND "; // set query operator to AND if toggled
     }
-
-    // Reset the tfidf instance at the beginning of fetching news process
-    tfidf.current = new TfIdf();
-
-    console.log("fetching news, called from: " + calledFrom);
-    console.log("fetching news with these themes...", localSelectedThemes);
-    if (!isSurveyModeEnabled) {
-      setIsLoading(true);
+    // Patch: Prevent empty query and avoid parentheses in fetchAllNewsNA
+    const themesQuery = localSelectedThemes.join(queryOperator);
+    if (!themesQuery || themesQuery.trim() === "") {
+      throw new Error("Query string is empty, cannot fetch articles.");
     }
+    response = await fetchAllNewsNA(
+      themesQuery,
+      langCode
+    ); // using OR/AND operator to search for multiple themes
+  } else if (source === "theNewsApi") {
+    response = await fetchTNA(selectedCountry, localSelectedThemes.join(","));
+  } else if (source === "googleNews") {
+    response = await fetchRecommendedNews();
+  }
+  console.log("Fetching news from " + source + "...");
 
+  currentCountryName = getCountryCode(selectedCountry);
+
+  console.log("Source: " + source);
+
+  if (response) {
     let articles = [];
-    let page = 1;
-    let totalPages = 1; // Placeholder for total pages, updated after the first response
+    console.log("RESPONSE:");
+    response.data.articles.forEach((article) => {
+      console.log(article.title);
+    });
 
-    let response;
-    console.log("using source: " + source);
+    if (source === "theNewsApi" && response.data) {
+      articles = response.data.map((item) => ({
+        author: item.source, // Assuming there's no author information in the original data
+        content: item.snippet, // Using the snippet as the content
+        description: item.description,
+        publishedAt: item.published_at,
+        source: { name: item.source },
+        title: item.title,
+        url: item.url,
+        urlToImage: item.image_url,
+      }));
+      // setIsLoading(false); // Set isLoading to false after data is fetched
+    } else if (response.data) {
+      // Filter out articles with null descriptions
 
-    if (source === "newsApi") {
-      let queryOperator = " OR ";
-      if (andOperator) {
-        queryOperator = " AND "; // set query operator to AND if toggled
-      }
-      response = await fetchAllNewsNA(
-        localSelectedThemes.join(queryOperator),
-        selectedLanguageCode
-      ); // using OR operator to search for multiple themes
-    } else if (source === "theNewsApi") {
-      response = await fetchTNA(selectedCountry, localSelectedThemes.join(","));
-    } else if (source === "googleNews") {
-      response = await fetchRecommendedNews();
+      articles = response.data.articles;
+
+      console.log("Saving " + articles.length + " articles:");
+
+      /// SAVE TO A FILE
+      // Convert the articles to JSON
+      const jsonData = JSON.stringify(articles, null, 2);
+
+      // Define the path to save the file (in the app's document directory)
+      const fileUri = FileSystem.documentDirectory + "filteredArticles.json";
+
+      // Write the JSON data to a file
+      FileSystem.writeAsStringAsync(fileUri, jsonData)
+        .then(() => {
+          console.log("Filtered articles saved to", fileUri);
+        })
+        .catch((error) => {
+          console.error("Error saving file:", error);
+        });
+
+      return articles;
+
+      console.log("set news data from the fetchnews USEEFFECT");
+
+      // setIsLoading(false); // Set isLoading to false after data is fetched
     }
-    console.log("Fetching news from " + source + "...");
 
-    currentCountryName = getCountryCode(selectedCountry);
+    // summarizeThemesInArticles(articles.slice(0, 3));
 
-    console.log("Source: " + source);
+    console.log("Language CODE: " + selectedLanguageCode);
 
-    if (response) {
-      let articles = [];
-      console.log("RESPONSE:");
-      response.data.articles.forEach((article) => {
-        console.log(article.title);
-      });
+    // console.log("full response is above ");
+    console.log("Country: " + selectedCountry);
 
-      if (source === "theNewsApi" && response.data) {
-        articles = response.data.map((item) => ({
-          author: item.source, // Assuming there's no author information in the original data
-          content: item.snippet, // Using the snippet as the content
-          description: item.description,
-          publishedAt: item.published_at,
-          source: { name: item.source },
-          title: item.title,
-          url: item.url,
-          urlToImage: item.image_url,
-        }));
-        // setIsLoading(false); // Set isLoading to false after data is fetched
-      } else if (response.data) {
-        // Filter out articles with null descriptions
+    // console.log("articles: ");
+    // console.log(articles.slice(0, 3));
 
-        articles = response.data.articles;
+    // console.log("newsData is now:" + newsData);
+    // setNewsWithSummaries(articles);
 
-        console.log("Saving " + articles.length + " articles:");
-
-        /// SAVE TO A FILE
-        // Convert the articles to JSON
-        const jsonData = JSON.stringify(articles, null, 2);
-
-        // Define the path to save the file (in the app's document directory)
-        const fileUri = FileSystem.documentDirectory + "filteredArticles.json";
-
-        // Write the JSON data to a file
-        FileSystem.writeAsStringAsync(fileUri, jsonData)
-          .then(() => {
-            console.log("Filtered articles saved to", fileUri);
-          })
-          .catch((error) => {
-            console.error("Error saving file:", error);
-          });
-
-        return articles;
-
-        console.log("set news data from the fetchnews USEEFFECT");
-
-        // setIsLoading(false); // Set isLoading to false after data is fetched
-      }
-
-      // summarizeThemesInArticles(articles.slice(0, 3));
-
-      console.log("Language CODE: " + selectedLanguageCode);
-
-      // console.log("full response is above ");
-      console.log("Country: " + selectedCountry);
-
-      // console.log("articles: ");
-      // console.log(articles.slice(0, 3));
-
-      // console.log("newsData is now:" + newsData);
-      // setNewsWithSummaries(articles);
-
-      // analyzeNewsSentiments(articles);
-      // generateSummaries(articles);
-    }
-  };
+    // analyzeNewsSentiments(articles);
+    // generateSummaries(articles);
+  }
+};
 
   const generateSummary = async (articles) => {
     const summarizedNews = await Promise.all(
@@ -1298,19 +1294,32 @@ export default function FeedScreen({ navigation }) {
               ? fetchedArticles.length < articlesPerMonth
               : currentPage === 1)
           ) {
-            const response = await fetchNCA(
-              localSelectedThemes.join(queryOperator), // Recherche par mots-clés
-              [],
+            const langCode = selectedLanguageCode || currentLanguageCode || "en";
+            // Build query string with filtering and log if empty
+            const queryString = localSelectedThemes
+              .filter((theme) => theme && theme.trim() !== "")
+              .join(" " + queryOperator + " ")
+              .trim();
+            if (!queryString) {
+              console.warn("⛔ Skipping query: No themes selected.");
+              break; // Prevents infinite loop by breaking instead of continuing
+            }
+            const response = await fetchAllNewsNA(
+              queryString.replace(/[()]/g, ""),
+              langCode,
               from, // Date de début
               currentPage,
               currentLanguageCode,
               { to, page_size: storeToFile ? 10 : articlesPerMonth } // Taille adaptée au mode
             );
 
-            if (response && response.articles && response.articles.length > 0) {
+            // Patch: Use response?.data?.articles for all usages
+            const articles = response?.data?.articles || [];
+
+            if (articles.length > 0) {
               if (storeToFile) {
                 // Mélanger les articles pour en obtenir un échantillon aléatoire
-                const shuffledArticles = response.articles.sort(
+                const shuffledArticles = articles.sort(
                   () => Math.random() - 0.5
                 );
 
@@ -1322,7 +1331,7 @@ export default function FeedScreen({ navigation }) {
                 fetchedArticles = fetchedArticles.concat(articlesToAdd);
               } else {
                 // Si storeToFile est false, récupérer les articles de la première page
-                fetchedArticles = fetchedArticles.concat(response.articles);
+                fetchedArticles = fetchedArticles.concat(articles);
                 hasMorePages = false; // On ne veut qu'une page dans ce mode
               }
 
@@ -1330,7 +1339,7 @@ export default function FeedScreen({ navigation }) {
                 `Page ${currentPage}: ${
                   storeToFile
                     ? fetchedArticles.length
-                    : response.articles.length
+                    : articles.length
                 } articles added.`
               );
               currentPage++;
@@ -1349,7 +1358,7 @@ export default function FeedScreen({ navigation }) {
           );
         } catch (error) {
           console.error(`Error fetching articles for ${from} to ${to}:`, error);
-          console.error('Skipping')
+          console.error("Skipping");
         }
       }
 
@@ -1565,9 +1574,10 @@ export default function FeedScreen({ navigation }) {
       } else {
         queryOperator = " OR ";
       }
-      fetchNCA(
+      const langCode = selectedLanguageCode || currentLanguageCode || "en";
+      fetchAllNewsNA(
         localSelectedThemes.join(queryOperator),
-        [],
+        langCode,
         FROM_DATE,
         1,
         currentLanguageCode
@@ -1790,7 +1800,7 @@ export default function FeedScreen({ navigation }) {
       "📂 Survey Mode activé, chargement des articles sauvegardés..."
     );
 
-    if (isSurveyModeEnabled ) {
+    if (isSurveyModeEnabled) {
       // Ne recharge pas si on a déjà des articles
       if (newsData.length > 0) {
         console.log("✅ Articles déjà chargés, pas de nouveau chargement.");
@@ -1804,11 +1814,9 @@ export default function FeedScreen({ navigation }) {
   }, [isSurveyModeEnabled]);
 
   useEffect(() => {
-    console.log(
-      "📂 Demo Mode activé, chargement des articles sauvegardés..."
-    );
+    console.log("📂 Demo Mode activé, chargement des articles sauvegardés...");
 
-    if (isDemoModeEnabled ) {
+    if (isDemoModeEnabled) {
       // Ne recharge pas si on a déjà des articles
       if (newsData.length > 0) {
         console.log("✅ Articles déjà chargés, pas de nouveau chargement.");
@@ -2017,11 +2025,11 @@ export default function FeedScreen({ navigation }) {
           style={[styles.themesContainer, { alignItems: "justify-between" }]}
           className="flex-col mx-2 my-4"
         >
-        {isDemoModeEnabled && (
+          {isDemoModeEnabled && (
             <Text className="my-0 mx-4" style={styles.noPreferencesText}>
               Demo Mode
             </Text>
-        )}
+          )}
           <View className="flex-row mx-2 my-4">
             <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
             <Header handleThemeChange={changeTheme} />
@@ -2131,7 +2139,7 @@ export default function FeedScreen({ navigation }) {
                 Compute Opinion Levels
               </Text>
             </TouchableOpacity> */}
-        {!isSurveyModeEnabled && ( 
+        {!isSurveyModeEnabled && (
           <Text className="my-2 mx-2 " style={styles.noPreferencesText}>
             {translations[selectedLanguageCode].found} {newsData.length}{" "}
             {translations[selectedLanguageCode].articlesIn}{" "}
@@ -2143,66 +2151,66 @@ export default function FeedScreen({ navigation }) {
         )}
       </View>
       {!isLoading && newsData.length > 0 ? (
-        console.log("LOG NEWS DATA::", JSON.stringify(newsData, null, 2)),
-        <ScrollView>
-          {userControlEnabled && (
-            <View className="flex-row p-2 pr-3 m-2 mb-2 rounded-lg bg-white items-center justify-between shadow max-w-[98%]">
-              <Text
-                className="mx-0 ml-2 text-gray-300 max-w-[80%]"
-                style={[styles.explanationText]}
-              >
-                {translations[selectedLanguageCode].sortByMatch}
-              </Text>
+        (console.log("LOG NEWS DATA::", JSON.stringify(newsData, null, 2)),
+        (
+          <ScrollView>
+            {userControlEnabled && (
+              <View className="flex-row p-2 pr-3 m-2 mb-2 rounded-lg bg-white items-center justify-between shadow max-w-[98%]">
+                <Text
+                  className="mx-0 ml-2 text-gray-300 max-w-[80%]"
+                  style={[styles.explanationText]}
+                >
+                  {translations[selectedLanguageCode].sortByMatch}
+                </Text>
 
-
-              <Switch
-                className="my-1 flex-wrap"
-                value={sortByMatch}
-                onChange={toggleSortByMatch}
-              />
-            </View>
-          )}
-          <View
-            style={styles.articlesContainer}
-            className={colorScheme === "dark" ? "bg-black" : "bg-gray-100"}
-          >
-            {/* NEWS ITEM SECTION */}
-            {newsData.map((article, index) => (
-              <TouchableOpacity
-                className="my-0.5 mx-2 p-1 rounded-lg bg-white shadow"
-                key={index}
-                onPress={() => handleNewsDetailsClick(article)}
-              >
-                <View className="flex-row p-0.5">
-                  {article && article.media ? (
-                    <Image
-                      className="rounded"
-                      source={{
-                        uri: article.media || "https://picsum.photos/200/400",
-                        // uri: article.media || "https://picsum.photos/200/400",
-                      }}
-                      style={{
-                        width: heightPercentageToDP(8),
-                        height: heightPercentageToDP(8),
-                      }}
-                    />
-                  ) : (
-                    // <Text>No Image Available</Text>
-                    <Image
-                      className="rounded"
-                      source={{
-                        uri: "https://picsum.photos/200/400",
-                      }}
-                      style={{
-                        width: heightPercentageToDP(8),
-                        height: heightPercentageToDP(8),
-                      }}
-                    />
-                  )}
-                  <View className="w-auto pl-4 space-y-0.2">
-                    {!isSurveyModeEnabled && (
-                      <>
-                        {/* <Text className="text-xs font-bold text-gray-900 dark:text-neutral-300">
+                <Switch
+                  className="my-1 flex-wrap"
+                  value={sortByMatch}
+                  onChange={toggleSortByMatch}
+                />
+              </View>
+            )}
+            <View
+              style={styles.articlesContainer}
+              className={colorScheme === "dark" ? "bg-black" : "bg-gray-100"}
+            >
+              {/* NEWS ITEM SECTION */}
+              {newsData.map((article, index) => (
+                <TouchableOpacity
+                  className="my-0.5 mx-2 p-1 rounded-lg bg-white shadow"
+                  key={index}
+                  onPress={() => handleNewsDetailsClick(article)}
+                >
+                  <View className="flex-row p-0.5">
+                    {article && article.media ? (
+                      <Image
+                        className="rounded"
+                        source={{
+                          uri: article.media || "https://picsum.photos/200/400",
+                          // uri: article.media || "https://picsum.photos/200/400",
+                        }}
+                        style={{
+                          width: heightPercentageToDP(8),
+                          height: heightPercentageToDP(8),
+                        }}
+                      />
+                    ) : (
+                      // <Text>No Image Available</Text>
+                      <Image
+                        className="rounded"
+                        source={{
+                          uri: "https://picsum.photos/200/400",
+                        }}
+                        style={{
+                          width: heightPercentageToDP(8),
+                          height: heightPercentageToDP(8),
+                        }}
+                      />
+                    )}
+                    <View className="w-auto pl-4 space-y-0.2">
+                      {!isSurveyModeEnabled && (
+                        <>
+                          {/* <Text className="text-xs font-bold text-gray-900 dark:text-neutral-300">
                           {article.topicEngagementScore
                             ? article.topicEngagementScore
                             : "Source: "}
@@ -2210,282 +2218,302 @@ export default function FeedScreen({ navigation }) {
                             ? article.tfidfScore
                             : "No Tf-IDF score"}
                         </Text> */}
-                        <Text className="text-xs font-bold text-gray-900 dark:text-neutral-300">
-                          {article?.clean_url.length > 20
-                            ? article.clean_url.slice(0, 20) + "..."
-                            : article.clean_url}
+                          <Text className="text-xs font-bold text-gray-900 dark:text-neutral-300">
+                            {article?.clean_url && typeof article.clean_url === "string"
+                              ? article.clean_url.length > 20
+                                ? article.clean_url.slice(0, 20) + "..."
+                                : article.clean_url
+                              : "Unknown Source"}
+                          </Text>
+                        </>
+                      )}
+
+                      {article.title && (
+                        <Text
+                          className="text-neutral-800 flex-shrink dark:text-white  min-h-[50px] leading-[19px]"
+                          style={{
+                            fontWeight: showSummaries ? "normal" : "bold",
+                            maxWidth: "83%",
+                          }}
+                        >
+                          {showSummaries
+                            ? article.aiSummary
+                            : article?.title?.length > 160
+                            ? article?.title.slice(0, 180) + "..."
+                            : article?.title}
                         </Text>
-                      </>
-                    )}
-                    
-                    {article.title && (
-                      <Text
-                        className="text-neutral-800 flex-shrink dark:text-white  min-h-[50px] leading-[19px]"
-                        style={{
-                          fontWeight: showSummaries ? "normal" : "bold",
-                          maxWidth: "83%",
-                        }}
-                      >
-                        {showSummaries
-                          ? article.aiSummary
-                          : article?.title?.length > 160
-                          ? article?.title.slice(0, 180) + "..."
-                          : article?.title}
+                      )}
+                      {article.is_opinion && (
+                        <Text className="text-xs text-blue-500 dark:text-blue-400">
+                          Opinion (rated by AI (NewsCatcher))
+                        </Text>
+                      )}
+                      <Text className="text-xs text-gray-700 dark:text-neutral-400">
+                        {isSurveyModeEnabled && article.published_date}
+
+                        {!isSurveyModeEnabled &&
+                          formatDate(
+                            article.published_date,
+                            article.published_date_precision
+                          )}
                       </Text>
-                    )}
-                    {article.is_opinion && (
-                      <Text className="text-xs text-blue-500 dark:text-blue-400">
-                        Opinion (rated by AI (NewsCatcher))
-                      </Text>
-                    )}
-                    <Text className="text-xs text-gray-700 dark:text-neutral-400">
-                      {isSurveyModeEnabled && article.published_date}
 
-                      {!isSurveyModeEnabled &&
-                        formatDate(
-                          article.published_date,
-                          article.published_date_precision
-                        )}
-                    </Text>
+                      {itemLevelTransparencyEnabled && (
+                        <View style={{ maxWidth: "95%", flexWrap: "wrap" }}>
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              color: "#000",
+                              fontFamily: "Helvetica",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            {
+                              translations[selectedLanguageCode]
+                                .itemLevelExplanationTitle
+                            }
+                          </Text>
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              color: "#000",
+                              fontFamily: "Helvetica",
+                              flexShrink: 1,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            {" "}
+                            {article.explanation}
+                          </Text>
+                        </View>
+                      )}
 
-                    {itemLevelTransparencyEnabled && (
-                   <View style={{ maxWidth: "95%", flexWrap: 'wrap' }}>
-                   <Text style={{ fontSize: 12, color: "#000", fontFamily: "Helvetica", fontWeight: "bold" }}>
-                     {translations[selectedLanguageCode].itemLevelExplanationTitle}
-                   </Text>
-                   <Text
-                     style={{
-                       fontSize: 12,
-                       color: "#000",
-                       fontFamily: "Helvetica",
-                       flexShrink: 1,
-                       flexWrap: 'wrap',
-                     }}
-                   >
-                     {" "}{article.explanation}
-                   </Text>
-                 </View>
-                    )}
-
-
-                    {!isSurveyModeEnabled && (
-                      
-                      <Text style={{ fontSize: 12, color: "#333" }}>
-                        {article.polarizingTechniques}
-                        {/* {
+                      {!isSurveyModeEnabled && (
+                        <Text style={{ fontSize: 12, color: "#333" }}>
+                          {article.polarizingTechniques}
+                          {/* {
                           translations[selectedLanguageCode]
                             .polarizingTechniques
                         } */}
-                        {article.polarityScore &&
-                        article.polarityScore !== " " ? (
-                          <Text style={{ fontSize: 12, color: "#333" }}>
-                            {"🧲".repeat(article.polarityScore)}
-                          </Text>
-                        ) : (
-                          <Text style={{ fontSize: 12, color: "#333" }}> </Text>
-                        )}
-                      </Text>
-                    )}
+                          {article.polarityScore &&
+                          article.polarityScore !== " " ? (
+                            <Text style={{ fontSize: 12, color: "#333" }}>
+                              {"🧲".repeat(article.polarityScore)}
+                            </Text>
+                          ) : (
+                            <Text style={{ fontSize: 12, color: "#333" }}>
+                              {" "}
+                            </Text>
+                          )}
+                        </Text>
+                      )}
 
-                    {/* <Text style={{ fontSize: 12, color: "#333" }}>
+                      {/* <Text style={{ fontSize: 12, color: "#333" }}>
                           {article.is_opinion
                             ? "Contains opinion"
                             : "Not rated as opinion"}
                         </Text> */}
+                    </View>
+                    {/* Expandable Section */}
+                    <View
+                      style={{
+                        position: "absolute",
+                        bottom: 10,
+                        right: 10,
+                      }}
+                    >
+                      <Text>{userControlEnabled}</Text>
+                      {!isSurveyModeEnabled ? (
+                        <TouchableOpacity
+                          onPress={() => handleExpand(index)}
+                          style={{
+                            backgroundColor: "#f0f0f0",
+                            padding: 5,
+                            borderRadius: 4,
+                          }}
+                        >
+                          <Text style={{ fontSize: 10, color: "#007AFF" }}>
+                            {
+                              translations[selectedLanguageCode]
+                                .summarizeThisArticle
+                            }
+                          </Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <></>
+                      )}
+                    </View>
                   </View>
-                  {/* Expandable Section */}
-                  <View
-                    style={{
-                      position: "absolute",
-                      bottom: 10,
-                      right: 10,
-                    }}
-                  >
-                    <Text>{userControlEnabled}</Text>
-                    {!isSurveyModeEnabled ? (
-                      <TouchableOpacity
-                        onPress={() => handleExpand(index)}
+
+                  {/* Expanded Content */}
+                  {expandedItem === index && (
+                    <View style={styles.expandableContent}>
+                      <Text
                         style={{
-                          backgroundColor: "#f0f0f0",
-                          padding: 5,
-                          borderRadius: 4,
+                          fontSize: 14,
+                          color: "#555",
+                          fontWeight: "bold",
                         }}
                       >
-                        <Text style={{ fontSize: 10, color: "#007AFF" }}>
+                        {translations[selectedLanguageCode].summary}
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: "#555",
+                            fontWeight: "normal",
+                          }}
+                        >
+                          {" "}
+                          {
+                            translations[selectedLanguageCode].summaryTitle
+                          }: {article.aiSummary || "..."}
+                        </Text>{" "}
+                        {"\n"}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          color: "#555",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {/* {translations[selectedLanguageCode].polarizingTechniques}:{" "} */}{" "}
+                        {
+                          translations[selectedLanguageCode]
+                            .polarizingTechniques
+                        }
+                        {article.polarityTechnique || "..."}
+                        {console.log(article.polarityScore)}{" "}
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: "#555",
+                            fontWeight: "normal",
+                          }}
+                        ></Text>
+                        {"\n"}
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: "#555",
+                            fontWeight: "normal",
+                          }}
+                        >
                           {
                             translations[selectedLanguageCode]
-                              .summarizeThisArticle
+                              .generatedWithChatGPT
                           }
                         </Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <></>
-                    )}
-                  </View>
-                </View>
-
-                {/* Expanded Content */}
-                {expandedItem === index && (
-                  <View style={styles.expandableContent}>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        color: "#555",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {translations[selectedLanguageCode].summary}
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          color: "#555",
-                          fontWeight: "normal",
-                        }}
-                      >
-                        {" "}
-                        {translations[selectedLanguageCode].summaryTitle}:{" "}
-                        {article.aiSummary || "..."}
-                      </Text>{" "}
-                      {"\n"}
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        color: "#555",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {/* {translations[selectedLanguageCode].polarizingTechniques}:{" "} */}
-                      {" "}
-                      {translations[selectedLanguageCode].polarizingTechniques}
-                      {article.polarityTechnique || "..."}
-                      {console.log(article.polarityScore)}{" "}
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          color: "#555",
-                          fontWeight: "normal",
-                        }}
-                      ></Text>
-                      {"\n"}
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          color: "#555",
-                          fontWeight: "normal",
-                        }}
-                      >
-                        {translations[selectedLanguageCode].generatedWithChatGPT}
-                      </Text>
-                      {/* GPT Opinion: {article.chatgpt_opinion ? "Yes" : "No"} */}
-                    </Text>
-                  </View>
-                )}
-
-                {isSurveyModeEnabled ? null : (
-                  <View
-                    className="my-0"
-                    style={[styles.container, { flex: 0.1 }]}
-                  >
-                    {console.log("YOUR CLICKED TOPICS:", clickedTopics)}
-                    {console.log("THE GROUPED TOPICS:", groupedTopics)}
-                    <View className="flex-col my-0 mx-4">
-                      <Text className="my-0 mx-2 " style={styles.subTitle}>
-                        {translations[selectedLanguageCode].clickedTopics}
+                        {/* GPT Opinion: {article.chatgpt_opinion ? "Yes" : "No"} */}
                       </Text>
                     </View>
-                    {!safeClickedTopics.length > 0 ? (
-                      <View
-                        style={{
-                          flex: 0.2,
-                          justifyContent: "left",
-                          alignItems: "center",
-                        }}
-                      >
-                        <Text style={{ textAlign: "left", marginTop: 0 }}>
-                          Your topic history consumption will show here.
+                  )}
+
+                  {isSurveyModeEnabled ? null : (
+                    <View
+                      className="my-0"
+                      style={[styles.container, { flex: 0.1 }]}
+                    >
+                      {console.log("YOUR CLICKED TOPICS:", clickedTopics)}
+                      {console.log("THE GROUPED TOPICS:", groupedTopics)}
+                      <View className="flex-col my-0 mx-4">
+                        <Text className="my-0 mx-2 " style={styles.subTitle}>
+                          {translations[selectedLanguageCode].clickedTopics}
                         </Text>
                       </View>
-                    ) : (
-                      <ScrollView
-                        style={{
-                          flex: 0.1, // Take up all available space
-                          position: "relative",
-                        }}
-                        contentContainerStyle={{ paddingBottom: 1 }} // Add padding for smooth scrolling
-                      >
-                        <View style={{ paddingHorizontal: 10 }}>
-                          {Object.keys(groupedTopics).map((topic) => {
-                            if (topic == article.topic) {
-                              // Determine the range of dates to visualize
-                              // Get dynamic start and end dates for the current month
-                              const startDate = new Date();
-                              startDate.setDate(1); // First day of the current month
-                              startDate.setHours(0, 0, 0, 0);
-
-                              const endDate = new Date();
-                              endDate.setMonth(endDate.getMonth() + 1); // Move to next month
-                              endDate.setDate(0); // Last day of the current month
-                              endDate.setHours(23, 59, 59, 999);
-                              const dateRange = [];
-                              for (
-                                let d = new Date(startDate);
-                                d <= endDate;
-                                d.setDate(d.getDate() + 1)
-                              ) {
-                                dateRange.push(d.toISOString().split("T")[0]);
-                              }
-
-                              return (
-                                <View key={topic} style={{ marginBottom: 0 }}>
-                                  <Text className="center text-m m-0">
-                                    You've read about{" "}
-                                    <Text
-                                      style={{
-                                        marginBottom: 0,
-                                        textAlign: "center",
-                                        fontWeight: "bold",
-                                      }}
-                                    >
-                                      {topic}
-                                    </Text>{" "}
-                                    in {getCurrentMonth()}:
-                                  </Text>
-                                  <Svg
-                                    height="20"
-                                    width={dateRange.length * 10}
-                                    style={{ alignSelf: "center" }}
-                                  >
-                                    {dateRange.map((date, index) => {
-                                      const isClicked =
-                                        groupedTopics[topic][date]; // Check if this topic was clicked on this date
-                                      return (
-                                        <Rect
-                                          key={`${topic}-${date}`}
-                                          x={index * 10} // Space between squares
-                                          y={10} // Center vertically
-                                          width={10}
-                                          height={10}
-                                          fill={isClicked ? "black" : "white"}
-                                          stroke="gray" // Add a border for better visibility
-                                          strokeWidth={1}
-                                        />
-                                      );
-                                    })}
-                                  </Svg>
-                                </View>
-                              );
-                            }
-                          })}
+                      {!safeClickedTopics.length > 0 ? (
+                        <View
+                          style={{
+                            flex: 0.2,
+                            justifyContent: "left",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Text style={{ textAlign: "left", marginTop: 0 }}>
+                            Your topic history consumption will show here.
+                          </Text>
                         </View>
-                      </ScrollView>
-                    )}
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
+                      ) : (
+                        <ScrollView
+                          style={{
+                            flex: 0.1, // Take up all available space
+                            position: "relative",
+                          }}
+                          contentContainerStyle={{ paddingBottom: 1 }} // Add padding for smooth scrolling
+                        >
+                          <View style={{ paddingHorizontal: 10 }}>
+                            {Object.keys(groupedTopics).map((topic) => {
+                              if (topic == article.topic) {
+                                // Determine the range of dates to visualize
+                                // Get dynamic start and end dates for the current month
+                                const startDate = new Date();
+                                startDate.setDate(1); // First day of the current month
+                                startDate.setHours(0, 0, 0, 0);
+
+                                const endDate = new Date();
+                                endDate.setMonth(endDate.getMonth() + 1); // Move to next month
+                                endDate.setDate(0); // Last day of the current month
+                                endDate.setHours(23, 59, 59, 999);
+                                const dateRange = [];
+                                for (
+                                  let d = new Date(startDate);
+                                  d <= endDate;
+                                  d.setDate(d.getDate() + 1)
+                                ) {
+                                  dateRange.push(d.toISOString().split("T")[0]);
+                                }
+
+                                return (
+                                  <View key={topic} style={{ marginBottom: 0 }}>
+                                    <Text className="center text-m m-0">
+                                      You've read about{" "}
+                                      <Text
+                                        style={{
+                                          marginBottom: 0,
+                                          textAlign: "center",
+                                          fontWeight: "bold",
+                                        }}
+                                      >
+                                        {topic}
+                                      </Text>{" "}
+                                      in {getCurrentMonth()}:
+                                    </Text>
+                                    <Svg
+                                      height="20"
+                                      width={dateRange.length * 10}
+                                      style={{ alignSelf: "center" }}
+                                    >
+                                      {dateRange.map((date, index) => {
+                                        const isClicked =
+                                          groupedTopics[topic][date]; // Check if this topic was clicked on this date
+                                        return (
+                                          <Rect
+                                            key={`${topic}-${date}`}
+                                            x={index * 10} // Space between squares
+                                            y={10} // Center vertically
+                                            width={10}
+                                            height={10}
+                                            fill={isClicked ? "black" : "white"}
+                                            stroke="gray" // Add a border for better visibility
+                                            strokeWidth={1}
+                                          />
+                                        );
+                                      })}
+                                    </Svg>
+                                  </View>
+                                );
+                              }
+                            })}
+                          </View>
+                        </ScrollView>
+                      )}
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        ))
       ) : (
         <>
           <View style={styles.articlesContainer}>
@@ -2629,17 +2657,25 @@ const feedStyles = StyleSheet.create({
   },
 });
 
-// Helper function to calculate frequencies
+// Calculate frequencies of clicked topics
 const calculateThemeFrequencies = (clickedTopics) => {
   console.log("Clicked Topics:", clickedTopics);
 
   const frequencies = {};
-  clickedTopics.forEach((topic) => {
-    frequencies[topic] = (frequencies[topic] || 0) + 1;
+  clickedTopics.forEach((item) => {
+    const topic = item.topic;
+    console.log("topic:", topic);
+    if (typeof topic === "string") {
+      frequencies[topic] = (frequencies[topic] || 0) + 1;
+    } else {
+      console.warn("⚠️ Topic is undefined or not a string:", item);
+    }
   });
+
   console.log("Frequencies:", frequencies);
   return frequencies;
 };
+
 
 const getCurrentMonth = () => {
   const date = new Date(); // Current date and time

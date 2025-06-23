@@ -46,7 +46,7 @@ export var isContentFilterEnabled = true;
 export var userControlEnabled = true;
 export var transparencyEnabled = true;
 export var isSurveyModeEnabled = false;
-export var isDemoModeEnabled = true;
+export var isDemoModeEnabled = false;
 
 export const countries = [
   { code: "ar", name: "Argentina" },

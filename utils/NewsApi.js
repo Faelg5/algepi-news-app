@@ -5,7 +5,7 @@ import axios from "axios";
 import dayjs from "dayjs";
 
 const newsApiBaseUrl = "https://newsapi.org/v2";
-const theNewsApiBaseUrl = "https://api.thenewsapi.com/v1/news";
+// const theNewsApiBaseUrl = "https://api.thenewsapi.com/v1/news";
 
 
 const newsCatcherApiBaseURL = "https://api.newscatcherapi.com/v2";
@@ -33,14 +33,16 @@ const everythingUrlNA = (q, language) => {
   const fromDate = pastDate.toISOString().split("T")[0];
 
   /// IMPORTANT TODO PUT THIS BACK AFTER GETTING TO FILE ARTICLES
-  return `${newsApiBaseUrl}/everything?q=(${q})&language=${language}&sortBy=relevancy&from=${fromDate}&apiKey=${newsApiKey}&pageSize=10`;
+const safeQ = q && q.length > 0 ? q : "news";
+const safeLang = language && language.length > 0 ? language : "en";
 
+return `${newsApiBaseUrl}/everything?q=(${safeQ})&language=${safeLang}&sortBy=relevancy&from=${fromDate}&apiKey=${newsApiKey}&pageSize=10`;
   // COMMENT THIS TODO IMPORTANT
-  // return `${newsApiBaseUrl}/everything?q=news&from=${pastDate}&to=${today}&language=${language}&sortBy=publishedAt&apiKey=${newsApiKey}`;
+  return `${newsApiBaseUrl}/everything?q=news&from=${pastDate}&to=${today}&language=${language}&sortBy=publishedAt&apiKey=${newsApiKey}`;
 };
 
-const urlTNA = (locale, categories) =>
-  `${theNewsApiBaseUrl}/top?api_token=${theNewsApiKey}&locale=${locale}&categories=${categories}`;
+// const urlTNA = (locale, categories) =>
+//   `${theNewsApiBaseUrl}/top?api_token=${theNewsApiKey}&locale=${locale}&categories=${categories}`;
 
 const apiCall = async (sourceName, endpoints, params) => {
   const options = {
@@ -53,15 +55,22 @@ const apiCall = async (sourceName, endpoints, params) => {
     console.log("the EndPoint");
     console.log(endpoints);
 
-    const response = await axios.request(options);
+    let response;
+    try {
+      response = await axios.request(options);
+    } catch (error) {
+      console.log("❌ axios.request failed", error);
+      return {};
+    }
     // console.log("the RESPONSE");
     // console.log(response);
 
-    if (sourceName === "theNewsApi") {
-      return response.data;
-    } else {
-      return response;
-    }
+    // if (sourceName === "theNewsApi") {
+    //   return response.data;
+    // } else {
+    //   return response;
+    // }
+    return response;
   } catch (error) {
     console.log(error);
     return {};
@@ -78,12 +87,37 @@ export const fetchRecommendedNews = async (country, category) => {
 };
 
 export const fetchAllNewsNA = async (q, language) => {
-  console.log("fetching all news from News API");
-  console.log("terms: ", q);
-  console.log("language: ", language);
+  console.log("📡 Fetching all news from News API");
+  console.log("🔍 Terms:", q);
+  console.log("🌐 Language:", language);
 
   const url = everythingUrlNA(q, language);
-  return await apiCall("newsApi", url);
+
+  try {
+    const response = await apiCall("newsApi", url);
+    console.log("👉 RESPONSE FROM apiCall:", response);
+
+    const articles = response?.data?.articles;
+
+    if (!Array.isArray(articles)) {
+      console.warn("⚠️ No articles array found in NewsAPI response", response);
+      return [];
+    }
+
+    console.log("✅ Articles fetched:", articles.length);
+
+    return articles.map((article) => ({
+      title: article.title,
+      description: article.description,
+      url: article.url,
+      image: article.urlToImage,
+      date: article.publishedAt,
+      source: article.source?.name || "Unknown",
+    }));
+  } catch (error) {
+    console.error("❌ Error fetching articles from NewsAPI:", error?.message);
+    return [];
+  }
 };
 
 export const fetchSearchNews = async (query) => {
@@ -100,45 +134,45 @@ export const fetchTNA = async (locale, categories) => {
   return await apiCall("theNewsApi", url);
 };
 
-export const fetchNCA = async (
-  query,
-  sources = [],
-  from = DEFAULT_FROM_DATE,
-  page = 1,
-  lang = "en" // Par défaut "en" si aucune langue n'est fournie
-) => {
-  console.log("QUERY: ", query);
-  console.log(newsCatcherApiBaseURL);
-  try {
-    const fullUrl = `${newsCatcherApiBaseURL}/search/topic?` + new URLSearchParams({
-      q: query,
-      sources: sources.length > 0 ? sources.join(",") : undefined,
-      page_size: 10,
-      page,
-      from,
-      lang,
-    }).toString();
+// export const fetchNCA = async (
+//   query,
+//   sources = [],
+//   from = DEFAULT_FROM_DATE,
+//   page = 1,
+//   lang = "en" // Par défaut "en" si aucune langue n'est fournie
+// ) => {
+//   console.log("QUERY: ", query);
+//   console.log(newsCatcherApiBaseURL);
+//   try {
+//     const fullUrl = `${newsCatcherApiBaseURL}/search/topic?` + new URLSearchParams({
+//       q: query,
+//       sources: sources.length > 0 ? sources.join(",") : undefined,
+//       page_size: 10,
+//       page,
+//       from,
+//       lang,
+//     }).toString();
     
-    console.log("🧠 Full URL:", fullUrl);
+//     console.log("🧠 Full URL:", fullUrl);
     
-    const response = await axios.get(`${newsCatcherApiBaseURL}/search/topic`, {
-      params: {
-        q: query,
-        sources: sources.length > 0 ? sources.join(",") : undefined,
-        page_size: 10, // Taille maximale de la page autorisée par l'API
-        page, // Ajoutez la page demandée
-        from, // Paramètre "from" pour filtrer les dates
-        lang, // paramètre "lang" pour filtrer les langues
-      },
-      headers: { "x-api-key": newsCatcherApiKey },
-    });
+//     const response = await axios.get(`${newsCatcherApiBaseURL}/search/topic`, {
+//       params: {
+//         q: query,
+//         sources: sources.length > 0 ? sources.join(",") : undefined,
+//         page_size: 10, // Taille maximale de la page autorisée par l'API
+//         page, // Ajoutez la page demandée
+//         from, // Paramètre "from" pour filtrer les dates
+//         lang, // paramètre "lang" pour filtrer les langues
+//       },
+//       headers: { "x-api-key": newsCatcherApiKey },
+//     });
 
-    console.log("full query: ", response);
-    console.log("API RESPONSE: ", response.data); // Ajout de cette ligne pour déboguer
+//     console.log("full query: ", response);
+//     console.log("API RESPONSE: ", response.data); // Ajout de cette ligne pour déboguer
 
-    return response.data; // Retournez les données complètes de la réponse
-  } catch (error) {
-    console.error("Erreur lors de la récupération des articles :", error);
-    throw error; // Relancez l'erreur pour gestion ultérieure
-  }
-};
+//     return response.data; // Retournez les données complètes de la réponse
+//   } catch (error) {
+//     console.error("Erreur lors de la récupération des articles :", error);
+//     throw error; // Relancez l'erreur pour gestion ultérieure
+//   }
+// };

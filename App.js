@@ -56,7 +56,7 @@ export default function App() {
   const [itemLevelTransparencyEnabled, setIsItemLevelTransparencyEnabled] =
     useState(false);
   const [isSurveyModeEnabled, setIsSurveyModeEnabled] = useState(false);
-  const [isDemoModeEnabled, setIsDemoModeEnabled] = useState(true);
+  const [isDemoModeEnabled, setIsDemoModeEnabled] = useState(false);
 
   // const [availableCountries, setAvailableCountries] = useState([]);
 
