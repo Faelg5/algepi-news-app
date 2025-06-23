@@ -33,7 +33,11 @@
         "serviceAccountKeyPath": "./algepi-news-service-account-key.json",
         "track": "production"
       },
-      "ios": {}
+      "ios": {
+        "appleId": "human-ist-apple@unifr.ch",
+        "ascAppId": "6657459818",
+        "appleTeamId": "HFZGRBU23M"
+      }
     }
   }
 }

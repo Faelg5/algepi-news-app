@@ -1,4 +1,4 @@
-import { NEWS_CATCHER_API_KEY } from "@env";
+// import { NEWS_CATCHER_API_KEY } from "@env";
 
 import { newsApiKey, theNewsApiKey } from "./ApiKey";
 import axios from "axios";
@@ -7,14 +7,16 @@ import dayjs from "dayjs";
 const newsApiBaseUrl = "https://newsapi.org/v2";
 const theNewsApiBaseUrl = "https://api.thenewsapi.com/v1/news";
 
+
 const newsCatcherApiBaseURL = "https://api.newscatcherapi.com/v2";
+const newsCatcherApiKey = process.env.EXPO_PUBLIC_NEWS_CATCHER_API_KEY;
 
 // Calculer la date par défaut (3 mois avant aujourd'hui)
 const DEFAULT_FROM_DATE = dayjs().subtract(1, "month").format("YYYY/MM/DD");
 
 console.log(DEFAULT_FROM_DATE); // Affichera : 3 mois avant date actuelle
 
-console.log("Clé API :", NEWS_CATCHER_API_KEY); // Vérifie que la clé est correctement chargée
+console.log("Clé API :", newsCatcherApiKey); // Vérifie que la clé est correctement chargée
 
 const breakingNewsUrl = (country) =>
   `${newsApiBaseUrl}/top-headlines?country=${country}&apiKey=${newsApiKey}`;
@@ -106,8 +108,20 @@ export const fetchNCA = async (
   lang = "en" // Par défaut "en" si aucune langue n'est fournie
 ) => {
   console.log("QUERY: ", query);
+  console.log(newsCatcherApiBaseURL);
   try {
-    const response = await axios.get(`${newsCatcherApiBaseURL}/search`, {
+    const fullUrl = `${newsCatcherApiBaseURL}/search/topic?` + new URLSearchParams({
+      q: query,
+      sources: sources.length > 0 ? sources.join(",") : undefined,
+      page_size: 10,
+      page,
+      from,
+      lang,
+    }).toString();
+    
+    console.log("🧠 Full URL:", fullUrl);
+    
+    const response = await axios.get(`${newsCatcherApiBaseURL}/search/topic`, {
       params: {
         q: query,
         sources: sources.length > 0 ? sources.join(",") : undefined,
@@ -116,8 +130,10 @@ export const fetchNCA = async (
         from, // Paramètre "from" pour filtrer les dates
         lang, // paramètre "lang" pour filtrer les langues
       },
-      headers: { "x-api-key": NEWS_CATCHER_API_KEY },
+      headers: { "x-api-key": newsCatcherApiKey },
     });
+
+    console.log("full query: ", response);
     console.log("API RESPONSE: ", response.data); // Ajout de cette ligne pour déboguer
 
     return response.data; // Retournez les données complètes de la réponse

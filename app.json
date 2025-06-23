@@ -2,7 +2,7 @@
   "expo": {
     "name": "algepi-news-app",
     "slug": "algepi-news-app",
-    "version": "1.0.0",
+    "version": "1.1.2",
     "newArchEnabled": true,
     "orientation": "portrait",
     "icon": "./assets/icons/icon.png",
@@ -18,7 +18,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.human-ist.algepi-news-app",
-      "buildNumber": "3"
+      "buildNumber": "5",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -45,4 +48,5 @@
       "url": "https://u.expo.dev/bc637c89-818f-4eb0-9e28-7309f4dcb821"
     }
   }
+  
 }

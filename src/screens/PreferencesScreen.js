@@ -45,7 +45,8 @@ export var isTrackingEnabled = true;
 export var isContentFilterEnabled = true;
 export var userControlEnabled = true;
 export var transparencyEnabled = true;
-export var isSurveyModeEnabled = true;
+export var isSurveyModeEnabled = false;
+export var isDemoModeEnabled = true;
 
 export const countries = [
   { code: "ar", name: "Argentina" },
@@ -206,11 +207,14 @@ export default function PreferencesScreen() {
     UserPreferencesContext
   );
 
-  const { itemLevelTransparencyEnabled, setIsItemLevelTransparencyEnabled } = useContext(
+  const { itemLevelTransparencyEnabled, setIsItemLevelTransparencyEnabled } =
+    useContext(UserPreferencesContext);
+
+  const { isSurveyModeEnabled, setIsSurveyModeEnabled } = useContext(
     UserPreferencesContext
   );
 
-  const { isSurveyModeEnabled, setIsSurveyModeEnabled } = useContext(
+  const { isDemoModeEnabled, setIsDemoModeEnabled } = useContext(
     UserPreferencesContext
   );
 
@@ -269,6 +273,10 @@ export default function PreferencesScreen() {
     setIsSurveyModeEnabled((prevState) => !prevState);
   };
 
+  const handleDemoMode = () => {
+    setIsDemoModeEnabled((prevState) => !prevState);
+  };
+
   const handleSelectCountry = (country) => {
     setCurrentCountry(country);
   };
@@ -321,6 +329,19 @@ export default function PreferencesScreen() {
                 </Text>
               </Text>
             </View>
+            <View className="flex-row bg-white rounded-lg items-center justify-between">
+              <Text style={styles.countryButtonText}>
+                {" "}
+                {translations[selectedLanguageCode].enableDemoMode}
+              </Text>
+              <Switch
+                value={isDemoModeEnabled}
+                onValueChange={handleDemoMode}
+                style={styles.switch}
+              />
+            </View>
+            {/* ------- Horizontal line ------- */}
+            <View className="h-px bg-gray-200 mx-4" />
             <View className="flex-row bg-white rounded-lg items-center justify-between">
               <Text style={styles.countryButtonText}>
                 {" "}
@@ -377,31 +398,31 @@ export default function PreferencesScreen() {
               {translations[selectedLanguageCode].learnMore}
             </Text>
 
-        <View className="mx-10 my-8" style={styles.trackingContainer}>
-          <Text style={styles.subTitle}>
-            {translations[selectedLanguageCode].clickedTopicsTitle} {translations[selectedLanguageCode].inText}
-            <Text> </Text>  
-            <Text className="font-semibold">
-            {getCurrentMonth()}
-            </Text>
-          </Text>
-
-          {data.length > 0 ? (
-            <View className="mx-10 my-4" style={styles.trackingContainer}>
-              <Text style={{ fontSize: 16, marginTop: 10 }}>
-                {data
-                  .map(({ topic, count }) => `${topic} (${count})`)
-                  .join(", ")}{" "}
-                {/* Transforme les topics en texte formaté */}
-                {translations[selectedLanguageCode].inText} {getCurrentMonth()}.
+            <View className="mx-10 my-8" style={styles.trackingContainer}>
+              <Text style={styles.subTitle}>
+                {translations[selectedLanguageCode].clickedTopicsTitle}{" "}
+                {translations[selectedLanguageCode].inText}
+                <Text> </Text>
+                <Text className="font-semibold">{getCurrentMonth()}</Text>
               </Text>
-            </View>
-          ) : (
-            <Text style={{ textAlign: "center", marginTop: 20 }}>
-                {translations[selectedLanguageCode].clickedTopics} .
+
+              {data.length > 0 ? (
+                <View className="mx-10 my-4" style={styles.trackingContainer}>
+                  <Text style={{ fontSize: 16, marginTop: 10 }}>
+                    {data
+                      .map(({ topic, count }) => `${topic} (${count})`)
+                      .join(", ")}{" "}
+                    {/* Transforme les topics en texte formaté */}
+                    {translations[selectedLanguageCode].inText}{" "}
+                    {getCurrentMonth()}.
+                  </Text>
+                </View>
+              ) : (
+                <Text style={{ textAlign: "center", marginTop: 20 }}>
+                  {translations[selectedLanguageCode].clickedTopics} .
                 </Text>
-          )}
-        </View>
+              )}
+            </View>
             {/* ------- Horizontal line ------- */}
             <View className="h-px bg-gray-200 mx-4" />
           </View>
@@ -451,7 +472,6 @@ export default function PreferencesScreen() {
             </View>
           </View>
         </View>
-
 
         {/* <View className="mx-10 my-10" style={styles.trackingContainer}>
         <Text style={styles.title}>Themes history:</Text>

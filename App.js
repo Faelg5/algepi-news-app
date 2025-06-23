@@ -9,7 +9,8 @@ import { newsApiKey, aptabaseApiKey } from "./utils/ApiKey";
 
 import Aptabase from "@aptabase/react-native"; // Library for Aptabase, a GDPR-compliant database
 
-Aptabase.init(aptabaseApiKey); // Aptabase API key
+const AptabaseApiKey = process.env.EXPO_PUBLIC_APTABASE_API_KEY;
+Aptabase.init(AptabaseApiKey); // Aptabase API key
 
 var xaiMode = true;
 
@@ -52,8 +53,11 @@ export default function App() {
   const [isContentFilterEnabled, setIsContentFilterEnabled] = useState(false);
   const [userControlEnabled, setUserControlEnabled] = useState(false);
   const [transparencyEnabled, setIsTransparencyEnabled] = useState(false);
-  const [itemLevelTransparencyEnabled, setIsItemLevelTransparencyEnabled] = useState(false);
+  const [itemLevelTransparencyEnabled, setIsItemLevelTransparencyEnabled] =
+    useState(false);
   const [isSurveyModeEnabled, setIsSurveyModeEnabled] = useState(false);
+  const [isDemoModeEnabled, setIsDemoModeEnabled] = useState(true);
+
   // const [availableCountries, setAvailableCountries] = useState([]);
 
   // useEffect(() => {
@@ -86,6 +90,8 @@ export default function App() {
               setIsItemLevelTransparencyEnabled,
               isSurveyModeEnabled,
               setIsSurveyModeEnabled,
+              isDemoModeEnabled,
+              setIsDemoModeEnabled,
             }}
           >
             <AppNavigation />

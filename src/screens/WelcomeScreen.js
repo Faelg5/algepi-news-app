@@ -36,32 +36,58 @@ export default function WelcomeScreen() {
           className="font-bold text-4xl shadow-2xl text-white text-center tracking-wider"
           style={{
             fontSize: wp(10),
-            fontFamily: "Roboto",
+            fontFamily: "Helvetica",
           }}
         >
-          InforMate
+          NewsLens
         </Text>
 
         <Text
           className="text-white text-center max-w-[85%] leading-12 tracking-wider"
           style={{
             fontSize: wp(4),
-            fontFamily: "Roboto",
+            fontFamily: "Helvetica",
             fontWeight: "normal",
           }}
         >
-Welcome to Informate—personalized news, powered by AI. Choose your style:
-	•	The Analyst for in-depth insights.
-	•	The Storyteller for engaging narratives.
-	•	The Curator for quick updates.
-Stay informed, entertained, and inspired—your way.
-        </Text>
+Your news copilot.        </Text>
+        <Text
+          className="text-white text-justify max-w-[85%] leading-12 tracking-wider"
+          style={{
+            fontSize: wp(4),
+            fontFamily: "Helvetica",
+            fontWeight: "normal",
+          }}
+        >
+Title Check — Reveal how headlines shape your perception.</Text>
+
+  <Text
+          className="text-white text-justify max-w-[85%] leading-12 tracking-wider"
+          style={{
+            fontSize: wp(4),
+            fontFamily: "Helvetica",
+            fontWeight: "normal",
+          }}
+        >
+Monthly Topic Recap — Spot your reading trends.       </Text>
+
+<Text
+          className="text-white text-justify max-w-[85%] leading-12 tracking-wider"
+          style={{
+            fontSize: wp(4),
+            fontFamily: "Helvetica",
+            fontWeight: "normal",
+          }}
+        >
+Summary — Your instant news digest.     </Text>
+
+
 
         <Text
           className="font-bold text-4xl shadow-2xl text-white text-center tracking-wider"
           style={{
             fontSize: wp(6),
-            fontFamily: "Roboto",
+            fontFamily: "Helvetica",
           }}
         >
           Consent notice:
@@ -70,7 +96,7 @@ Stay informed, entertained, and inspired—your way.
           className="text-white text-center max-w-[85%] leading-12 tracking-wider"
           style={{
             fontSize: wp(4),
-            fontFamily: "Roboto",
+            fontFamily: "Helvetica",
             fontWeight: "bold",
           }}
         >
@@ -80,14 +106,14 @@ Stay informed, entertained, and inspired—your way.
       </View>
 
       <TouchableOpacity
-        className="bg-green-900 rounded-full p-4 justify-center items-center w-[90%] mt-8"
+        className="bg-blue-500 rounded-full p-4 justify-center items-center w-[90%] mt-8"
         onPress={() => navigation.navigate("HomeTabs")}
       >
         <Text
           className="text-white text-center font-bold tracking-wider"
           style={{
             fontSize: wp(5),
-            fontFamily: "Roboto",
+            fontFamily: "Helvetica",
           }}
         >
           Agree

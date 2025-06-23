@@ -5,7 +5,7 @@ export default StyleSheet.create({
   // Existing styles
   container: {
     flex: 1,
-    padding: 16,
+    padding: 1,
     backgroundColor: ColorList.backgroundPrimary,
   },
   inputContainer: {

@@ -1,0 +1,62 @@
+[
+  {
+    "title": "World leaders meet for defense summit. These are the most important topics on the agenda",
+    "author": "The Times",
+    "published_date": "Yesterday, 14:26",
+    "link": "https://example.com/news/defense-summit",
+    "clean_url": "example.com",
+    "excerpt": "",
+    "summary": "Global leaders gathered to address current defense challenges and future strategies.",
+    "topic": "International Politics",
+    "media": "https://i.ibb.co/ycTZXmBk/nl-1.jpg",
+    "explanation": "Major ongoing news event"
+  },
+  {
+    "title": "Authorities unveil new policies to strengthen crime prevention",
+    "author": "BBC News",
+    "published_date": "Today, 08:45",
+    "link": "https://example.com/news/crime-policy-update",
+    "clean_url": "example.com",
+    "excerpt": "",
+    "summary": "Authorities announced stronger crime prevention measures to protect communities.",
+    "topic": "Public Safety",
+    "media": "https://i.ibb.co/VWkWVK6T/nl-2.jpg",
+    "explanation": "Trending in your area"
+  },
+  {
+    "title": "Smartphone ban at schools seems successful: “Students pay attention to each other again”",
+    "author": "The Guardian",
+    "published_date": "Today, 07:36",
+    "link": "https://example.com/news/school-smartphone-ban",
+    "clean_url": "example.com",
+    "excerpt": "",
+    "summary": "The smartphone ban in schools encourages students to interact more face-to-face.",
+    "topic": "Education",
+    "media": "https://i.ibb.co/TD9P66sb/nl-3.jpg",
+    "explanation": "Based on your preferences"
+  },
+  {
+    "title": "Stunning goals and dramatic comebacks define action-packed match ",
+    "author": "Sky Sports",
+    "published_date": "Yesterday, 19:56",
+    "link": "https://example.com/news/football-drama",
+    "clean_url": "example.com",
+    "excerpt": "",
+    "summary": "A thrilling football match featured unforgettable goals and shocking comebacks.",
+    "topic": "Sports",
+    "media": "https://i.ibb.co/bgCr4K5z/nl-4.jpg",
+    "explanation": "Because you read similar articles"
+  },
+  {
+    "title": "These movies won the most prizes this year ",
+    "author": "Variety",
+    "published_date": "Today, 09:32",
+    "link": "https://example.com/news/film-awards",
+    "clean_url": "example.com",
+    "excerpt": "",
+    "summary": "This year’s top films swept the awards season with multiple honors.",
+    "topic": "Entertainment",
+    "media": "https://i.ibb.co/DDn5K0xJ/nl-5.png",
+    "explanation": "Based on the preferences of users like you"
+  }
+]

@@ -52,6 +52,7 @@ import {
   isTrackingEnabled,
   isContentFilterEnabled,
   isSurveyModeEnabled,
+  isDemoModeEnabled,
 } from "./PreferencesScreen"; // Import countries and languages list
 import { TfIdf } from "../../utils/tfidf"; // Custom TF-IDF class
 import styles from "../constants/styles";
@@ -78,6 +79,8 @@ import filteredArticlesNL from "../../assets/news/filteredArticles_nl.json";
 import filteredArticlesFR from "../../assets/news/filteredArticles_fr.json";
 import filteredArticlesEN from "../../assets/news/filteredArticles_en.json";
 import filteredArticlesDE from "../../assets/news/filteredArticles_de.json";
+
+import fallbackArticles from "../../assets/news/articles_technology_politics_2025-01-30.json";
 
 const topics = ["Technology", "Finance", "Health", "Entertainment", "Sports"];
 
@@ -340,9 +343,9 @@ const OpenAINeutralizedSummaryCall = async (
       {
         role: "system",
         content: `
-        You are an expert news summarizer. Your task is to generate concise and unbiased summaries of news articles in ${languageName}.
-        To ensure accuracy and neutrality:
-        
+        You are an expert news summarizer. Your task is to generate a very short and unbiased summaries of news articles in ${languageName}.
+        To ensure accuracy and neutrality and ease of understanding, please follow these guidelines:
+        0. Keep it under 30 words.
         1. Focus only on key arguments, facts, and conclusions without interpreting tone, intent, or emotional language.
         2. Avoid using subjective language or personal opinions. Stick to presenting factual content directly from the source.
         3. Do not reflect or amplify any biases present in the original text. If the content appears biased, simply present the key points objectively without endorsing the perspective.
@@ -505,9 +508,9 @@ Misleading Techniques:
 
 	1.	Assign a polarity score from 0 to 5 based on the number and severity of techniques present:
 	•	0: No techniques detected (neutral).
-	•	1–2: Minimal use of subtle techniques.
+	•	1-2: Minimal use of subtle techniques.
 	•	3–4: Moderate use of techniques that evoke strong emotional responses.
-	•	5: Heavy use of highly polarising techniques such as fear-mongering, hyperbole, or loaded language.
+	•	5: Heavy use of highly polarizing techniques such as fear-mongering, hyperbole, or loaded language.
 	2.	Evaluate only the listed techniques and avoid considering any external context.
 	3.	If the title uses multiple techniques, weigh their combined effect when assigning the score.
   
@@ -657,10 +660,45 @@ export default function FeedScreen({ navigation }) {
           : filteredArticlesEN.articles || [];
         console.log("✅ English Articles loaded:", parsedData.length);
       
-      } else {
+      } else if (currentLanguageCode === "it") {
+        console.log(" Loading Backup articles from `assets/`...");
+        parsedData = Array.isArray(fallbackArticles)
+          ? fallbackArticles
+          : fallbackArticles.articles || [];
+        console.log("✅ FALLBACK Articles loaded:", parsedData.length);
+      
+      }
+      
+      else {
         console.warn("🌐 Unsupported language code:", currentLanguageCode);
         parsedData = [];
       }
+      
+      // Final assignment to state
+      setNewsData(parsedData);
+      setUnsortedNewsData(parsedData);
+      setIsLoading(false);
+    } catch (error) {
+      console.error("❌ Error loading articles:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
+
+  // For Demo Mode - load a fixed list of Fallback articles
+  const loadSavedDemoArticles = async () => {
+    console.log("📂 Loading saved articles...");
+  
+    try {
+      let parsedData = [];
+
+        console.log(" Loading Backup articles from `assets/`...");
+        parsedData = Array.isArray(fallbackArticles)
+          ? fallbackArticles
+          : fallbackArticles.articles || [];
+        console.log("✅ FALLBACK Articles loaded:", parsedData.length);
       
       // Final assignment to state
       setNewsData(parsedData);
@@ -699,6 +737,7 @@ export default function FeedScreen({ navigation }) {
   }, [itemLevelTransparencyEnabled]);
 
   const { isSurveyModeEnabled } = useContext(UserPreferencesContext);
+  const { isDemoModeEnabled } = useContext(UserPreferencesContext);
 
   /// DATAVIS SECTION ///////////
 
@@ -764,7 +803,7 @@ export default function FeedScreen({ navigation }) {
       return;
     }
 
-    alert("Selected Language Code:", selectedLanguageCode);
+    // alert("Selected Language Code:", selectedLanguageCode);
     const languageName = getLanguageName(selectedLanguageCode);
     if (!languageName || !languageName.trim()) {
       console.error("Invalid language name for summarization.");
@@ -1218,7 +1257,7 @@ export default function FeedScreen({ navigation }) {
 
     let allNewsData = [];
     const articlesPerMonth = 10; // Limite d'articles par mois
-    const maxMonths = 1; // Période de récupération : 5 dernières années
+    const maxMonths = 1; // Période de récupération : dernier mois
 
     const currentDate = dayjs();
     const startDate = dayjs().subtract(maxMonths, "month");
@@ -1310,6 +1349,7 @@ export default function FeedScreen({ navigation }) {
           );
         } catch (error) {
           console.error(`Error fetching articles for ${from} to ${to}:`, error);
+          console.error('Skipping')
         }
       }
 
@@ -1514,6 +1554,9 @@ export default function FeedScreen({ navigation }) {
   useEffect(() => {
     if (isSurveyModeEnabled) {
       loadSavedArticles();
+      return;
+    } else if (isDemoModeEnabled) {
+      loadSavedDemoArticles();
       return;
     } else {
       console.log("selected themes:::: " + localSelectedThemes);
@@ -1747,7 +1790,7 @@ export default function FeedScreen({ navigation }) {
       "📂 Survey Mode activé, chargement des articles sauvegardés..."
     );
 
-    if (isSurveyModeEnabled) {
+    if (isSurveyModeEnabled ) {
       // Ne recharge pas si on a déjà des articles
       if (newsData.length > 0) {
         console.log("✅ Articles déjà chargés, pas de nouveau chargement.");
@@ -1759,6 +1802,24 @@ export default function FeedScreen({ navigation }) {
       loadSavedArticles();
     }
   }, [isSurveyModeEnabled]);
+
+  useEffect(() => {
+    console.log(
+      "📂 Demo Mode activé, chargement des articles sauvegardés..."
+    );
+
+    if (isDemoModeEnabled ) {
+      // Ne recharge pas si on a déjà des articles
+      if (newsData.length > 0) {
+        console.log("✅ Articles déjà chargés, pas de nouveau chargement.");
+        return;
+      }
+
+      setIsLoading(false); // Active le loading uniquement si on n'a pas encore chargé les articles
+
+      loadSavedArticles();
+    }
+  }, [isDemoModeEnabled]);
 
   const handleSelectCountry = (country) => {
     setCurrentCountry(country);
@@ -1956,6 +2017,11 @@ export default function FeedScreen({ navigation }) {
           style={[styles.themesContainer, { alignItems: "justify-between" }]}
           className="flex-col mx-2 my-4"
         >
+        {isDemoModeEnabled && (
+            <Text className="my-0 mx-4" style={styles.noPreferencesText}>
+              Demo Mode
+            </Text>
+        )}
           <View className="flex-row mx-2 my-4">
             <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
             <Header handleThemeChange={changeTheme} />
@@ -2136,14 +2202,14 @@ export default function FeedScreen({ navigation }) {
                   <View className="w-auto pl-4 space-y-0.2">
                     {!isSurveyModeEnabled && (
                       <>
-                        <Text className="text-xs font-bold text-gray-900 dark:text-neutral-300">
+                        {/* <Text className="text-xs font-bold text-gray-900 dark:text-neutral-300">
                           {article.topicEngagementScore
                             ? article.topicEngagementScore
-                            : "Topic: "}
+                            : "Source: "}
                           {article.topic
                             ? article.tfidfScore
                             : "No Tf-IDF score"}
-                        </Text>
+                        </Text> */}
                         <Text className="text-xs font-bold text-gray-900 dark:text-neutral-300">
                           {article?.clean_url.length > 20
                             ? article.clean_url.slice(0, 20) + "..."
@@ -2201,13 +2267,15 @@ export default function FeedScreen({ navigation }) {
                  </View>
                     )}
 
+
                     {!isSurveyModeEnabled && (
+                      
                       <Text style={{ fontSize: 12, color: "#333" }}>
                         {article.polarizingTechniques}
-                        {
+                        {/* {
                           translations[selectedLanguageCode]
                             .polarizingTechniques
-                        }
+                        } */}
                         {article.polarityScore &&
                         article.polarityScore !== " " ? (
                           <Text style={{ fontSize: 12, color: "#333" }}>
@@ -2288,7 +2356,7 @@ export default function FeedScreen({ navigation }) {
                       }}
                     >
                       {/* {translations[selectedLanguageCode].polarizingTechniques}:{" "} */}
-                      🧲{" "}
+                      {" "}
                       {translations[selectedLanguageCode].polarizingTechniques}
                       {article.polarityTechnique || "..."}
                       {console.log(article.polarityScore)}{" "}
@@ -2307,7 +2375,7 @@ export default function FeedScreen({ navigation }) {
                           fontWeight: "normal",
                         }}
                       >
-                        {translations[selectedLanguageCode].whatIsThis}
+                        {translations[selectedLanguageCode].generatedWithChatGPT}
                       </Text>
                       {/* GPT Opinion: {article.chatgpt_opinion ? "Yes" : "No"} */}
                     </Text>
@@ -2316,13 +2384,13 @@ export default function FeedScreen({ navigation }) {
 
                 {isSurveyModeEnabled ? null : (
                   <View
-                    className="my-1"
+                    className="my-0"
                     style={[styles.container, { flex: 0.1 }]}
                   >
-                    {console.log("THE CLICKED TOPICS:", clickedTopics)}
+                    {console.log("YOUR CLICKED TOPICS:", clickedTopics)}
                     {console.log("THE GROUPED TOPICS:", groupedTopics)}
-                    <View className="flex-col my-4 mx-4">
-                      <Text className="my-2 mx-2 " style={styles.subTitle}>
+                    <View className="flex-col my-0 mx-4">
+                      <Text className="my-0 mx-2 " style={styles.subTitle}>
                         {translations[selectedLanguageCode].clickedTopics}
                       </Text>
                     </View>
@@ -2334,8 +2402,8 @@ export default function FeedScreen({ navigation }) {
                           alignItems: "center",
                         }}
                       >
-                        <Text style={{ textAlign: "left", marginTop: 1 }}>
-                          Nothing to see here yet. Start reading!
+                        <Text style={{ textAlign: "left", marginTop: 0 }}>
+                          Your topic history consumption will show here.
                         </Text>
                       </View>
                     ) : (
@@ -2369,12 +2437,12 @@ export default function FeedScreen({ navigation }) {
                               }
 
                               return (
-                                <View key={topic} style={{ marginBottom: 3 }}>
-                                  <Text className="center text-m m-4">
-                                    When you read about{" "}
+                                <View key={topic} style={{ marginBottom: 0 }}>
+                                  <Text className="center text-m m-0">
+                                    You've read about{" "}
                                     <Text
                                       style={{
-                                        marginBottom: 5,
+                                        marginBottom: 0,
                                         textAlign: "center",
                                         fontWeight: "bold",
                                       }}
@@ -2384,7 +2452,7 @@ export default function FeedScreen({ navigation }) {
                                     in {getCurrentMonth()}:
                                   </Text>
                                   <Svg
-                                    height="40"
+                                    height="20"
                                     width={dateRange.length * 10}
                                     style={{ alignSelf: "center" }}
                                   >

@@ -62,7 +62,7 @@ export default function AppNavigation() {
               iconName = focused
                 ? "document-text-sharp"
                 : "document-text-outline";
-            } else if (route.name === "Debriefo") {
+            } else if (route.name === "Summary") {
               iconName = focused
                 ? "document-text-sharp"
                 : "document-text-outline";
@@ -103,9 +103,9 @@ export default function AppNavigation() {
           <>
             <Tab.Screen name="Explorer" component={FeedScreen} />
 
-            <Tab.Screen name="Storyteller" component={FeedScreen} />
+            {/* <Tab.Screen name="Storyteller" component={FeedScreen} /> */}
 
-            <Tab.Screen name="Debriefo" component={SummariesScreen} />
+            <Tab.Screen name="Summary" component={SummariesScreen} />
             {/* <Tab.Screen name="Ask GPT" component={AskGPTScreen} /> */}
           </>
         )}
@@ -130,7 +130,7 @@ export default function AppNavigation() {
           <></>
         ) : (
           <>
-            <Stack.Screen name="Debriefo" component={SummariesScreen} />
+            <Stack.Screen name="Summary" component={SummariesScreen} />
             <Stack.Screen name="Ask GPT" component={AskGPTScreen} />
             <Stack.Screen name={profileName} component={PreferencesScreen} />
           </>

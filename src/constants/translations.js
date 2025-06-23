@@ -20,9 +20,9 @@ const translations = {
     noThemesSelectedPrompt: "No themes selected. Please select a theme to load news.",
     prefMatchTitle: "Preference Match Score",
     whyThisArticle: "Why this article?",
-    summarizeThisArticle: "🔍 AI Lens",
+    summarizeThisArticle: "🔍 Check title and content (GPT 3.5)",
     summary: "🤖",
-    summaryTitle: "Neutral Tone Summary",
+    summaryTitle: "AI Summary",
     toneScaleTitle: "Tone Intensity",
     toneScale: {
       0: "Neutral",
@@ -32,9 +32,9 @@ const translations = {
       4: "Committed",
       5: "Biased"
     },
-    polarizingTechniques: "",
+    polarizingTechniques: "News Lens: ",
     polarityScoreTitle: "Hook strength:",
-    whatIsThis: "What is this?",
+    generatedWithChatGPT: "Generated with ChatGPT-3.5",
     loadingNewsFeed: "Loading news feed...",
     didYouKnow:"Did you know?",
     contentFilterExplanation: "The content filtering algorithm adjusts your news feed based on how you use the app. The more you click on news, the more similar topics will appear, ranked according to your activity.",
@@ -53,7 +53,7 @@ const translations = {
 
     inText:"in",
     splashScreenText:"NewsMate helps you see through your news feed in a new way. Vary the ranking of your news based on your reading history or topics of interest. Use the AI Lens to get summaries of news articles in a more neutral tone. Become aware of emotional language in news articles and see how it affects your perception.",
-
+    enableDemoMode:"Demo Mode",
   },
     fr: {
     loadingTitle: "Chargement des actualités...",
@@ -88,7 +88,7 @@ const translations = {
       4: "Engagé",
       5: "Biaisé"
     },
-    polarizingTechniques: "Force d'accroche :",
+    polarizingTechniques: "Force d'accroche : ",
     polarityScoreTitle: "Polarity Score",
     whatIsThis: "Qu'est-ce que c'est ?",
     loadingNewsFeed: "Chargement en cours...",
@@ -110,6 +110,7 @@ const translations = {
     splashScreenText:"NewsMate vous aide à voir à travers votre fil d'actualités d'une nouvelle manière. Variez le classement de vos actualités en fonction de votre historique de lecture ou de vos sujets d'intérêt. Utilisez l'IA Lens pour obtenir des résumés d'articles d'actualité dans un ton plus neutre. Prenez conscience du langage émotionnel dans les articles d'actualité et voyez comment il affecte votre perception.",
     itemLevelExplanationTitle:"Pourquoi vous voyez cela: ",
     profileName: "Profil",
+    enableDemoMode:"Demo Mode",
 
   },
   de: {
@@ -144,6 +145,8 @@ const translations = {
     sortByMatch: "Die automatische Auswahl von Nachrichten ist eingeschaltet",
     newsSourceExplanation: "Die Nachrichten in diesem Feed werden für Sie auf der Grundlage Ihrer bevorzugten Themen, Ihres Standorts und der Interessen ähnlicher Nutzerinnen und Nutzern ausgewählt.",
     profileName: "Profil",
+    enableDemoMode:"Demo Mode",
+
   },
   es: {
     loadingTitle: "Cargando noticias...",
@@ -162,6 +165,8 @@ const translations = {
     noImageAvailable: "No hay imagen disponible",
     noThemesSelectedPrompt: "No se seleccionaron temas. Por favor, selecciona un tema para cargar noticias.",
     whyThisArticle: "¿Por qué este artículo?",
+    enableDemoMode:"Demo Mode",
+
   },
   it: {
     loadingTitle: "Caricamento delle notizie...",
@@ -180,6 +185,8 @@ const translations = {
     noImageAvailable: "Nessuna immagine disponibile",
     noThemesSelectedPrompt: "Nessun tema selezionato. Si prega di selezionare un tema per caricare le notizie.",
     whyThisArticle : "Perché questo articolo?",
+    enableDemoMode:"Demo Mode",
+
   },
   nl: {
     sinceWhen: "sinds ",

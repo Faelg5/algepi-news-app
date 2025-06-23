@@ -21,7 +21,10 @@ import { useFonts } from "expo-font";
 import { Ionicons } from "@expo/vector-icons";
 import { VictoryPie, VictoryTooltip, VictoryLegend } from "victory-native";
 
-const CHATGPT_API_KEY ="";
+import { newsApiKey, theNewsApiKey, openAIApiKey } from "../../utils/ApiKey";
+
+import fallbackArticles from "../../assets/news/articles_technology_politics_2025-01-30.json";
+
 const API_URL = "https://api.openai.com/v1/chat/completions";
 
 export default function HomeScreen() {
@@ -30,6 +33,7 @@ export default function HomeScreen() {
   const [newsWithSentiments, setNewsWithSentiments] = useState([]);
   const [showLegend, setShowLegend] = useState({});
   const [themesSummary, setThemesSummary] = useState("");
+  const [newsData, setNewsData] = useState([]);
 
   const toggleLegend = (index) => {
     setShowLegend((prevState) => ({
@@ -63,7 +67,7 @@ export default function HomeScreen() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer " + CHATGPT_API_KEY,
+          Authorization: "Bearer " + openAIApiKey,
         },
         body: JSON.stringify(APIBody),
       });
@@ -108,7 +112,7 @@ export default function HomeScreen() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer " + CHATGPT_API_KEY,
+          Authorization: "Bearer " + openAIApiKey,
         },
         body: JSON.stringify(APIBody),
       });
@@ -153,7 +157,7 @@ export default function HomeScreen() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer " + CHATGPT_API_KEY,
+          Authorization: "Bearer " + openAIApiKey,
         },
         body: JSON.stringify(APIBody),
       });
@@ -187,15 +191,48 @@ export default function HomeScreen() {
   };
 
   const generateThemesSummary = async (articles) => {
-    const themes = articles.map((article) => article.title);
+    const titles = articles.map((article) => article.title).join(" ");
+    console.log("TITLES: ", titles);
 
-    const allThemes = themes;
+    const APIBody = {
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an assistant tasked with summarizing the key themes from a set of article titles. Generate a 2-3 sentence summary describing the main topics discussed, using plain, accessible language. Do not list the titles or use bullet points.",
+        },
+        {
+          role: "user",
+          content: titles,
+        },
+      ],
+      max_tokens: 100,
+      temperature: 0.5,
+    };
 
-    const combinedHeadlines = allth.join(' ');
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + openAIApiKey,
+        },
+        body: JSON.stringify(APIBody),
+      });
 
-    const themesSummary = await callOpenAIAPI_themes(allThemes);
+      if (!response.ok) {
+        throw new Error("Failed to generate summary: " + response.statusText);
+      }
 
-    setThemesSummary(themesSummary);
+      const data = await response.json();
+      setThemesSummary(
+        data.choices?.[0]?.message?.content?.trim() || "No summary available."
+      );
+    } catch (error) {
+      console.error("Error generating summary:", error);
+      setThemesSummary("Error generating summary.");
+    }
   };
 
   const { colorScheme, toggleColorScheme } = useColorScheme();
@@ -213,6 +250,42 @@ export default function HomeScreen() {
       console.error("Font loading error:", fontError);
     }
   }, [fontsLoaded, fontError]);
+
+  /// FETCH NEWS FROM NEWSCATCHER API
+  useEffect(() => {
+    loadSavedDemoArticles();
+    return;
+  }, []);
+
+  useEffect(() => {
+    console.log("NEWS DATA: ");
+    console.log(newsData);
+    generateThemesSummary(newsData);
+  }, [newsData]);
+
+  // For Demo Mode - load a fixed list of Fallback articles
+  const loadSavedDemoArticles = async () => {
+    console.log("📂 Loading saved articles...");
+
+    try {
+      let parsedData = [];
+
+      console.log(" Loading Backup articles from `assets/`...");
+      parsedData = Array.isArray(fallbackArticles)
+        ? fallbackArticles
+        : fallbackArticles.articles || [];
+      console.log("✅ FALLBACK Articles loaded:", parsedData.length);
+
+      // Final assignment to state
+      setNewsData(parsedData);
+      setUnsortedNewsData(parsedData);
+      setIsLoading(false);
+    } catch (error) {
+      console.error("❌ Error loading articles:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const { data, isLoading: isBreakingLoading } = useQuery({
     queryKey: ["breakingNews"],
@@ -240,7 +313,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-                  {/* <Counter /> */}
+      {/* <Counter /> */}
 
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <Header />
@@ -268,11 +341,16 @@ export default function HomeScreen() {
             <View>
               <MiniHeader
                 label="Today's Brief for Your Topics"
-                explanation="This brief was generated by ChatGPT, based on the themes present in your News Feed."
+                explanation="This brief was generated by ChatGPT, based on the titles of the articles currently present in your News Feed."
               />
               <Text style={styles.themesSummary}>{themesSummary}</Text>
-              <MiniHeader label="News Feed" explanation="We use a tf-idf score to rank articles according to content relevance."/>
-              <Text style={styles.subTitle}>Recommended articles with your preferences from NewsCatcher API.</Text>
+              {/* <MiniHeader label="News Feed" explanation="We use a tf-idf score to rank articles according to content relevance."/>
+              <Text style={styles.subTitle}>Recommended articles with your preferences from NewsCatcher API.</Text> */}
+
+              <Text style={styles.subTitle}>
+                This brief was generated by ChatGPT, based on the articles
+                present in your News Feed.
+              </Text>
 
               {newsWithSentiments.map((article, index) => (
                 <View key={index} style={styles.articleContainer}>
@@ -346,7 +424,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   themesSummary: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "normal",
     marginVertical: 50,
   },
